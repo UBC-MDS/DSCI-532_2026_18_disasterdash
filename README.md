@@ -1,4 +1,4 @@
-# DSCI-532_2025_18_DisasterDash
+# DISASTER DASH
 
 ## About
 
@@ -34,3 +34,4 @@ shiny run src/app.py
 ## License
 
 Software licensed under the MIT License. Content licensed under CC BY 4.0. See [LICENSE.md](LICENSE.md) for details.
+
