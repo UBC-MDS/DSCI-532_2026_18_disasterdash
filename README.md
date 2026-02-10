@@ -32,4 +32,5 @@ shiny run src/app.py
 5. Open your browser to the URL shown in the terminal (typically `http://localhost:8000`)
 
 ## License
-Licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
+
+Software licensed under the MIT License. Content licensed under CC BY 4.0. See [LICENSE.md](LICENSE.md) for details.
