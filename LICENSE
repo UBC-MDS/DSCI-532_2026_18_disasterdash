@@ -1,4 +1,6 @@
-MIT License
+# Licenses
+
+## Software License (MIT)
 
 Copyright (c) 2026 Master of Data Science at the University of British Columbia
 
@@ -19,3 +21,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Content License (CC BY 4.0)
+
+All reports, documentation, and non-software content are licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+
+You are free to share and adapt this content with appropriate attribution.
+
+See: https://creativecommons.org/licenses/by/4.0/
