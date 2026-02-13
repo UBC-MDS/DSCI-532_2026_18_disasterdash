@@ -62,25 +62,67 @@ As a **global aid policy worker**, I want to **compare economic losses directly 
 
 ### Dashboard Layout and Components
 
-Disaster Dash features a high-contrast purple and yellow-orange interface for visual clarity.
+Disaster Dash features a comprehensive interface designed for rapid data exploration during emergency planning sessions.
 
-**Left Sidebar (Purple - Collapsible):**
-- "Disaster Dash" header with hamburger menu
-- **Country Filter:** Dropdown to select specific countries or "All"
-- **Date Range:** Calendar-based picker (2018-2024)
-- **Disaster Type:** Radio buttons (Earthquake, Landslide, Flood, Hurricane, Extreme Heat)
+**Left Sidebar (Collapsible Control Panel):**
 
-**Main Area (Yellow-Orange):**
-- **World Heatmap:** Choropleth map with purple-to-magenta gradient showing disaster metrics by country; legend on right (0.0-1.0 scale)
-- **Bar Chart:** Comparative metrics across categories
-- **Pie Chart:** Proportional breakdown with percentages
-- **Scrollable:** View all visualizations without resizing
+The sidebar houses all filtering controls in an organized menu that can be collapsed via a hamburger menu icon to maximize visualization space.
 
-**User Flow:**
-1. User opens dashboard → sees global heatmap (2018-2024)
-2. Selects "Flood" → all visualizations update to flood data
-3. Picks date range → charts refresh to selected timeframe
-4. Selects country → visualizations show country-specific statistics
-5. Scrolls to examine bar/pie charts for detailed analysis
+- **App Header:** "Disaster Dash" branding with toggle collapse menu for expanding/collapsing the control panel
+- **Filters Section:**
+  - **Country Filter:** Dropdown menu allowing users to select specific countries or "All" for global view
+  - **Date Range Selector:** Dual calendar interface with start and end date pickers, enabling precise temporal filtering across the 2018-2024 dataset. Users can select custom date ranges for focused analysis.
+  - **Disaster Type Filter:** Radio button selection for filtering by specific disaster categories (earthquake, landslide, flood, hurricane, extreme heat). Radio buttons ensure single-type selection for focused analysis.
 
-**Design Rationale:** High-contrast colors reduce eye strain; radio buttons prevent data overload; integrated multi-chart view enables simultaneous geographic, comparative, and proportional analysis; collapsible sidebar maximizes visualization space.
+**Top Dashboard Area (Summary Statistics Cards):**
+
+Three prominent stat cards display key aggregate metrics:
+- **Avg Number of Casualties:** Shows average human toll across selected disasters
+- **Avg Recovery Time:** Displays average recovery duration in days
+- **Avg Economic Loss in $:** Presents average financial impact in USD
+
+These cards update dynamically based on filter selections, providing immediate context.
+
+**Main Visualization Area (Center):**
+
+- **World Heatmap Visualization:** 
+  - Interactive choropleth map showing global disaster data by country
+  - Legend displayed on the right showing the gradient scale (0.0 to 1.0 normalized values)
+  - Countries shaded by selected metric intensity
+  - Supports hover interactions for detailed tooltips
+  
+- **Economic Loss Bar Chart (Bottom Left):**
+  - Vertical bar chart displaying comparative economic losses across four categories (Items 1-4)
+  - Y-axis scaled from 0-20 units
+  - Clear visual comparison of financial impacts
+  
+- **Global Economic Aid Bar Chart (Bottom Right):**
+  - Vertical bar chart showing aid contributions across four categories (Items 1-4)
+  - Y-axis scaled from 0-1000 units
+  - Direct comparison with loss chart enables immediate aid gap identification
+  - Legend indicates what each item represents
+
+**Navigation Features:**
+
+- **Scroll Bar:** Vertical scroll bar on the right enables navigation through all visualizations without page changes
+- **Responsive Legend:** Fixed legend beside the heatmap for constant reference while exploring data
+
+**User Interaction Flow:**
+
+1. User opens dashboard → sees global heatmap with all disasters (2018-2024) and summary stat cards
+2. User selects country from dropdown → all visualizations filter to that country
+3. User picks date range using dual calendar pickers → map, charts, and stat cards refresh to selected timeframe
+4. User selects disaster type via radio button → all components update to show only that disaster type
+5. User scrolls down to examine economic loss vs. aid bar charts side-by-side
+6. User compares bar chart heights to immediately identify aid coverage gaps
+7. User references stat cards for average benchmarks to assess if specific observations are above/below average
+
+**Design Rationale:**
+
+- **Collapsible Sidebar:** Maximizes screen space for visualizations during presentations while keeping all controls accessible
+- **Stat Cards Prominence:** Placing average metrics at the top provides immediate context before users dive into detailed visualizations
+- **Side-by-Side Bar Charts:** Positioning loss and aid charts adjacently enables instant visual comparison—the core insight for policy workers
+- **Radio Button Disaster Filter:** Single-selection prevents overlapping data series, reducing cognitive load and making patterns clearer
+- **Integrated Scrollable View:** All visualizations remain on one canvas, eliminating the need to switch between tabs or pages during analysis
+
+This dashboard design empowers global aid policy workers to rapidly identify where disaster aid responses are insufficient, compare losses against aid contributions, and build evidence-based policy recommendations for closing systematic funding gaps.
