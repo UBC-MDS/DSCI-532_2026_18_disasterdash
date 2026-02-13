@@ -11,16 +11,16 @@ We propose Disaster Dash, an interactive dashboard for exploring global disaster
 
 ## Section 2: Description of the Data
 
-We will visualize the Global Disaster Response Analysis dataset (2018-2024) containing thousands of disaster events worldwide. Key variables include:
+We will visualize a global disaster response dataset (2018-2024) containing thousands of disaster events worldwide with 12 key variables per observation. The dataset includes approximately 50,000+ disaster events. Key variables include:
 
-- **Geographic data** (`Country`, `Region`, `Latitude`, `Longitude`)
-- **Temporal data** (`Year`, `Date`, `Start_Date`, `End_Date`)
-- **Disaster characteristics** (`Disaster_Type`, `Disaster_Subtype`, `Event_Name`) - e.g., Earthquake, Flood, Hurricane, Drought
-- **Impact metrics** (`Total_Deaths`, `Total_Affected`, `Injured`, `Homeless`)
-- **Economic data** (`Total_Damage_USD`, `Insured_Losses`) - financial losses from disasters
-- **Response information** (`Aid_Contributions`, `Response_Type`) - international and domestic aid received
+- **Geographic data** (`country`, `latitude`, `longitude`) - location information for mapping disasters globally
+- **Temporal data** (`date`) - when disasters occurred for trend analysis
+- **Disaster characteristics** (`disaster_type`, `severity_index`) - classification (Earthquake, Flood, Hurricane, Extreme Heat, Landslide) and intensity rating (0-10 scale)
+- **Impact metrics** (`casualties`, `economic_loss_usd`) - human toll and financial losses from disasters
+- **Response data** (`response_time_hours`, `aid_amount_usd`, `response_efficiency_score`) - how quickly aid arrived, total aid contributed, and response quality rating
+- **Recovery metrics** (`recovery_days`) - time required for affected areas to recover
 
-We will derive key analytical variables including disaster frequency per country, **aid-to-loss ratio** (aid contributions as percentage of economic damage), **aid coverage gap** (difference between losses and aid), and average aid response metrics by disaster type and region to enable policy workers to benchmark aid adequacy.
+We will derive key analytical variables including disaster frequency per country, **aid-to-loss ratio** (aid_amount_usd as percentage of economic_loss_usd), **aid coverage gap** (difference between losses and aid), average response time by disaster type and region, and correlation between response_efficiency_score and recovery time to enable policy workers to benchmark aid adequacy and response effectiveness.
 
 ## Section 3: Research Questions & Usage Scenarios
 
@@ -50,11 +50,11 @@ As a **global aid policy worker**, I want to **compare economic losses directly 
 
 *Addressing User Story 1 (Filtering by disaster type), we analyzed disaster type distribution globally.*
 
-**Analysis:** Visualizations in `notebooks/eda_analysis.ipynb` show: (1) Floods are the most common disaster globally (35-40% of all disasters), (2) South/Southeast Asian countries experience disproportionately high flood frequencies, and (3) Monsoon regions show clear seasonal patterns.
+**Analysis:** The bar chart in `notebooks/eda_analysis.ipynb` reveals remarkably even distribution across all ten disaster types (2018-2024), ranging from 4,896 to 5,130 events (only 5% variation). Landslides are slightly most frequent, droughts least frequent, but no single type dominates.
 
-**Reflection:** This validates the need for disaster type filtering. By isolating floods, Fatima can identify geographic hotspots and compare against current resource deployment. The South Asian flood concentration confirms specialized teams should be stationed there. Switching between disaster types helps identify multi-hazard risk regions requiring different preparedness strategies.
+**Reflection:** This even distribution makes disaster type filtering critical for policy analysis. Since each type occurs at similar frequencies but receives different aid coverage rates, filtering enables identification of systematically underfunded disaster types. Policy workers can identify aid inequities that cannot be explained by disaster rarity, supporting evidence-based recommendations for equitable aid allocation across all disaster categories.
 
-*Key visualizations: (1) Bar chart of disaster type frequency, (2) Geographic heat map of floods by country, (3) Time series of disaster trends 2018-2024.*
+*Key visualizations: (1) Bar chart of disaster type frequency, (2) Geographic heat map of landslides by country, (3) Time series of disaster trends 2018-2024.*
 
 ## Section 5: App Sketch & Description
 
