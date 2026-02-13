@@ -54,77 +54,27 @@ app_ui = ui.page_fillable(
             open="desktop",
         ),
         ui.layout_columns(
-            # Full Width Main Map Visual
-            ui.card(
-                ui.card_header("World Map"),
-                ui.output_text("world_map"), # Reminder: change to output_plot when ready to actually plot! 
-                full_screen=True
-            ),
-            # Two Bar Charts Visual's for Comparison with KPI Cards
+            #  World Map and KPI's
+            ui.card("World Map: Countries coloured by number of disasters", full_screen=True),
             ui.layout_columns(
-                ui.layout_columns(
-                    ui.value_box(
-                        "Avg Loss ($)",
-                        ui.output_text("kpi_average_loss"),
-                        fill=False
-                    ),
-                    ui.card(
-                        ui.card_header("Avg Loss ($)"),
-                        ui.output_text("plot_loss") # Reminder: change to output_plot when ready to actually plot! 
-                    ),
-                    col_widths=[12, 12],
-                    row_heights=[1, 3]
-                ),
-                ui.layout_columns(
-                    ui.value_box(
-                        "Avg Aid ($)",
-                        ui.output_text("kpi_average_aid"),
-                        fill=False
-                    ),
-                    ui.card(
-                        ui.card_header("Avg Aid ($)"),
-                        ui.output_text("plot_aid") # Reminder: change to output_plot when ready to build the code to plot!
-                    ),
-                    col_widths=[12, 12],
-                    row_heights=[1, 3]
-                    
-                ),
-                col_widths=[6, 6]
+                ui.card('Kpi Card: Avg Loss $'),
+                ui.card('Kpi Card: Avg Aid $'), 
+                col_widths=[12, 12],
+                row_heights=[1, 1]
             ),
-            row_heights=[1, 1],
-            col_widths=[12, 12]
-        )
-    ) 
+            col_widths=[9,3]
+        ),
+        ui.layout_columns(
+            # Bar Charts 
+            ui.card("Bar Chart of Economic Loss by Disaster Type($)"),
+            ui.card("Bar Chart of Economic Aid by Disaster Type ($)"),
+            col_widths=[6, 6]
+        ),
+    )
 )
 
 
 def server(input, output, session):
-    # World Map Placeholder for Milestone 1
-
-    @output
-    @render.text
-    def world_map():
-        return "World Map with countries coloured by frequency of disaster"
-    
-    @output
-    @render.text
-    def plot_loss():
-        return "Bar Chart Showing Economic Loss in USD$ by Disaster Type"
-    
-    @output
-    @render.text
-    def plot_aid():
-        return "Bar Chart Showing Aid Provided in USD$ by Disaster Type"
-
-    @output
-    @render.text
-    def kpi_average_loss():
-        return "$0.00"
-    
-    @output
-    @render.text
-    def kpi_average_aid():
-        return "$0.00"
-
+    pass
 
 app = App(app_ui, server)
