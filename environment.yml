@@ -7,3 +7,6 @@ dependencies:
   - shiny
   - pandas
   - jupyter
+  - matplotlib
+  - seaborn
+  - plotly
