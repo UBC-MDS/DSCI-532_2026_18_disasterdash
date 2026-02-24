@@ -1,8 +1,12 @@
 from shiny import App, ui, render, reactive
+from pathlib import Path
 import pandas as pd
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
+
 # Load Data
-df = pd.read_csv("../data/raw/global_disaster_response_2018_2024.csv",
+df = pd.read_csv(DATA_PATH,
                  parse_dates=["date"])
 # Helper Function for kpi_gap() 
 def format_currency(value):
