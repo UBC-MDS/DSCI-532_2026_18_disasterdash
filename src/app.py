@@ -4,10 +4,9 @@ import pandas as pd
 # Load Data
 df = pd.read_csv("../data/raw/global_disaster_response_2018_2024.csv",
                  parse_dates=["date"])
-# Utility Function
+# Helper Function for kpi_gap() 
 def format_currency(value):
     """Format a numeric value as a human-readable currency string."""
-
     sign = "-" if value < 0 else ""
     value = abs(value)
     if value >= 1e12:
@@ -134,13 +133,14 @@ app_ui = ui.page_fillable(
             ui.card("World Map: Countries coloured by number of disasters", full_screen=True),
             # KPI Cards 
             ui.layout_columns(
-                ui.card(
-                    ui.output_ui("kpi_ratio"),
-                    title="Aid Coverage"
+                ui.value_box(
+                    "Aid Coverage",
+                    ui.output_text("kpi_ratio")
+
                 ),
-                ui.card(
-                    ui.output_ui("kpi_gap"),
-                    title="Aid Gap"
+                ui.value_box(
+                    "Aid Gap",
+                    ui.output_text("kpi_gap")
                 ), 
                 col_widths=[12, 12],
                 row_heights=[1, 1]
@@ -218,29 +218,24 @@ def server(input, output, session):
             (df["date"] <= pd.to_datetime(input.date_range()[1]))
         ]
         return filtered
-    @render.ui
+    # KPI Cards 
+    @render.text
     def kpi_ratio():
         data = filtered_df()
-
         total_loss = data["economic_loss_usd"].sum()
         total_aid = data['aid_amount_usd'].sum()
 
         if total_loss == 0:
-            ratio = 0
-        else:
-            ratio = (total_aid / total_loss) * 100
+            return "0.0%"
         
-        return ui.h3(f"{ratio:.1f}% Loss Covered")
-    
-    @render.ui
+        return f"{(total_aid / total_loss) * 100:.1f}%"
+    @render.text
     def kpi_gap():
         data = filtered_df()
-
         total_loss = data["economic_loss_usd"].sum()
         total_aid = data["aid_amount_usd"].sum()
         gap = total_loss - total_aid
-
-        return ui.h3(f"{format_currency(gap)} Aid Gap")
+        return format_currency(gap)
 
 
 app = App(app_ui, server)
