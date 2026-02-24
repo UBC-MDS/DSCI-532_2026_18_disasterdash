@@ -11,7 +11,7 @@
 
 - The group decided that cividis is the default pallet that we'll use for charting - with possibility of user choice in later versions. 
 
-
+- The decision was made to add a country's GDP as a tool-tip
 
 ### Future Upgrades
 
