@@ -2,7 +2,9 @@
 
 ## About
 
-Disaster Dash is an interactive dashboard to provide data to assist with Global Disaster Aid Policy development. Users can see the frequency of disasters on a World Map, and filter by disaster type, dates, and countries. By using our dashboard, a policy developer can immediately see the most frequent disasters around the world, and compare the economic loss and global aid response provided through simple, clear visualizations.
+Global aid policy workers face a critical challenge: understanding where disaster aid responses are insufficient compared to actual economic losses. Without a clear understanding of the aid gaps, policymakers may struggle to develop effective responses to global disasters.
+
+Disaster Dash is an interactive dashboard that makes these gaps visible. Users can explore global disaster frequency on a World Map, filter by disaster type, dates, and countries, and directly compare economic losses against aid responses through clear visualizations.
 
 This dashboard is a group project for the Master of Data Science program at the University of British Columbia, DSCI 532: Data Visualization, 2025-26 Cohort.
 
