@@ -6,6 +6,18 @@ Disaster Dash is an interactive dashboard to provide data to assist with Global 
 
 This dashboard is a group project for the Master of Data Science program at the University of British Columbia, DSCI 532: Data Visualization, 2025-26 Cohort.
 
+## Deployed App
+
+| Build | URL |
+|-------|-----|
+| Stable (main) | [disasterdash-stable](https://clr-saunders-dsci-532-2026-18-disasterdash-stable.share.connect.posit.cloud)|
+| Preview (dev) | [disasterdash-preview](https://clr-saunders-dsci-532-2026-18-disasterdash-preview.share.connect.posit.cloud)|
+
+
+## Demo
+
+![Demo](img/demo.gif)
+
 ## Running the Dashboard Locally
 
 1. Clone this repository
@@ -31,7 +43,18 @@ shiny run src/app.py
 
 5. Open your browser to the URL shown in the terminal.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+## Contributors
+
+| Name | GitHub |
+|------|--------|
+| Ojasv Issar | [@Ojasv-Issar](https://github.com/Ojasv-Issar) |
+| Joel Nicholas Peterson | [@j031nich0145](https://github.com/j031nich0145) |
+| Claire Saunders | [@clr-saunders](https://github.com/clr-saunders) |
+
 ## License
 
 Software licensed under the MIT License. Content licensed under CC BY 4.0. See [LICENSE.md](LICENSE.md) for details.
-
