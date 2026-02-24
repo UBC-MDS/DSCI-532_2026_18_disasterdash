@@ -136,7 +136,6 @@ app_ui = ui.page_fillable(
                 ui.value_box(
                     "Aid Coverage",
                     ui.output_text("kpi_ratio")
-
                 ),
                 ui.value_box(
                     "Aid Gap",
@@ -206,6 +205,12 @@ def server(input, output, session):
         ui.update_select(
             id="summary_stat", 
             selected="mean",
+            session=session
+        )
+        ui.update_date_range(
+            id="date_range",
+            start="2018-01-01",
+            end="2024-12-31",
             session=session
         )
     # Filtered Dataframe 
