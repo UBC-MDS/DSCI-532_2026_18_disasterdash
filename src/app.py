@@ -38,12 +38,14 @@ app_ui = ui.page_fillable(
     ui.panel_title("Disaster Dash"),
     ui.layout_sidebar(
         ui.sidebar(
+            # Input: User can Check/Uncheck countries
             ui.input_checkbox_group(
                 id="countries", 
                 label="Countries", 
                 choices={c: c for c in COUNTRIES},
                 selected=COUNTRIES,
             ),
+            # Buttons for All or None Countries 
             ui.div(
                 ui.input_action_button(
                     id="select_all_countries",
@@ -57,6 +59,7 @@ app_ui = ui.page_fillable(
                 ),
                 style="display: flex; gap: 5px;"
             ),
+            # Date Range Toggle
             ui.input_date_range(
                 id="date_range", 
                 label="Date Range",
@@ -65,12 +68,14 @@ app_ui = ui.page_fillable(
                 min="2018-01-01",
                 max="2024-12-31"
             ),
+            # Input: User can check/uncheck disaster boxes
             ui.input_checkbox_group(
                 id="disaster_type",
                 label="Disaster Type",
                 choices={d: d for d in DISASTER_TYPES},
                 selected=DISASTER_TYPES,
             ),
+            # All or None buttons for disaster types 
             ui.div(
                 ui.input_action_button(
                     id="select_all_disasters",
@@ -84,6 +89,7 @@ app_ui = ui.page_fillable(
                 ),
                 style="display: flex; gap:5px;"
             ),
+            # Summary Statistic Drop Down Menu 
             ui.input_select(
                 id="summary_stat", 
                 label="Summary Statistic",
@@ -101,6 +107,7 @@ app_ui = ui.page_fillable(
                 ),
             open="desktop",
         ),
+        # Outputs 
         ui.layout_columns(
             #  World Map and KPI's
             ui.card("World Map: Countries coloured by number of disasters", full_screen=True),
@@ -122,6 +129,55 @@ app_ui = ui.page_fillable(
 )
 
 def server(input, output, session):
-    pass
+    @reactive.effect
+    @reactive.event(input.select_all_countries)
+    def select_all_countries():
+        ui.update_checkbox_group(
+            id="countries", 
+            selected=COUNTRIES,
+            session=session
+        )
+    @reactive.effect
+    @reactive.event(input.deselect_all_countries)
+    def deselect_all_countries():
+        ui.update_checkbox_group(
+            id="countries", 
+            selected=[],
+            session=session
+        )
+    @reactive.effect
+    @reactive.event(input.select_all_disasters)
+    def select_all_disasters():
+        ui.update_checkbox_group(
+            id="disaster_type", 
+            selected=DISASTER_TYPES,
+            session=session
+        )
+    @reactive.effect
+    @reactive.event(input.deselect_all_disasters)
+    def deselect_all_disasters():
+        ui.update_checkbox_group(
+            id="disaster_type",
+            selected=[],
+            session=session
+        )
+    @reactive.effect
+    @reactive.event(input.reset_button)
+    def reset_filters():
+        ui.update_checkbox_group(
+            id="countries", 
+            selected=COUNTRIES,
+            session=session
+        )
+        ui.update_checkbox_group(
+            id="disaster_type",
+            selected=DISASTER_TYPES, 
+            session=session
+        )
+        ui.update_select(
+            id="summary_stat", 
+            selected="mean",
+            session=session
+        )
 
 app = App(app_ui, server)
