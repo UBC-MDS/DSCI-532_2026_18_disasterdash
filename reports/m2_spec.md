@@ -13,19 +13,20 @@
 
 | ID | Type | Shiny widget / renderer | Depends on | Job story |
 |----|------|------------------------|------------|-----------|
-| `countries` | Input | `ui.input_selectize()` | — | #2, #3 |
+| `countries` | Input | `ui.input_checkbox_group()` | — | #2, #3 |
 | `select_all_countries` | Input | `ui.input_action_button()` | — | #1, #2, #3 |
 | `date_range` | Input | `ui.input_date_range()` | — | #2 |
 | `disaster_type` | Input | `ui.input_checkbox_group()` | — | #1 |
 | `select_all_disasters` | Input | `ui.input_action_button()` | — | #1, #2 |
 | `summary_stat` | Input | `ui.input_select()` | — | #1, #2, #3, #4 |
 | `reset_button` | Input | `ui.input_action_button()` | — | #1, #2, #3, #4 |
-| `filtered_df` | Reactive calc | `@reactive.calc` | `countries`, `date_range`, `disaster_type`, `summary_stat` | #1, #2, #3, #4 |
+| `filtered_df` | Reactive calc | `@reactive.calc` | `countries`, `date_range`, `disaster_type` | #1, #2, #3, #4 |
 | `map_heatmap` | Output | `@render.plot` | `filtered_df` | #2, #3 |
-| `plot_economic_loss` | Output | `@render.plot` | `filtered_df` | #1, #3, #4 |
-| `plot_aid_response` | Output | `@render.plot` | `filtered_df` | #1, #3,  #4 |
-| `kpi_ratio` | Output | `@render.ui` | `filtered_df` | #1, #3, #4 |
-| `kpi_gap` | Output | `@render.ui` | `filtered_df` | #1, #3, #4 |
+| `plot_economic_loss` | Output | `@render.plot` | `aggregated_df` | #1, #3, #4 |
+| `plot_aid_response` | Output | `@render.plot` | `aggregated_df` | #1, #3,  #4 |
+| `kpi_ratio` | Output | `@render.text` | `filtered_df` | #1, #3, #4 |
+| `kpi_gap` | Output | `@render.text` | `filtered_df` | #1, #3, #4 |
+| `aggregated_df` | Reactive calc | `@reactive.calc` | `filtered_df`, `summary_stat` | #1, #4 |
 
 ## Reactivity Diagram
 
@@ -36,9 +37,14 @@ TBD
 ## Calculation Details
 
 ### `filtered_df`
-- **Depends on:** `countries`, `date_range`, `disaster_type`, `summary_stat`
-- **Transformation:** Filters the full disaster dataset to rows matching the selected disaster type(s), within the selected date range, and for the selected countries. Applies the selected summary statistic (mean, minimum, sum, or maximum) to aggregate economic loss and aid amount for the bar charts. Always computes total sums independently for the KPI calculations.
-- **Consumed by:** `map_heatmap`, `plot_economic_loss`, `plot_aid_response`, `kpi_ratio`, `kpi_gap`
+- **Depends on:** `countries`, `date_range`, `disaster_type`
+- **Transformation:** Filters the full disaster dataset to rows matching the selected disaster type(s), within the selected date range, and for the selected countries.
+- **Consumed by:** `map_heatmap`, `aggregated_df`, `kpi_ratio`, `kpi_gap`
+
+### `aggregated_df` 
+- **Depends on:** `filtered_df`, `summary_stat`
+- **Transformation:** Groups the filtered dataset by `disaster_type` and applies the selected summary statistic ( `mean`, `sum`, `min` or `max`) to `economic_loss_usd` and `aid_amount_usd`. 
+- **Consumed by:** `plot_economic_loss`, `plot_aid_response`
 
 ### KPI Calculations
 - **`kpi_ratio`**: `sum(aid_amount_usd) / sum(economic_loss_usd) × 100` — displayed as a percentage representing how much of total economic loss is covered by aid across the filtered selection.
