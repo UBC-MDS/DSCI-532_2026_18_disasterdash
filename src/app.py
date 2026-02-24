@@ -1,4 +1,8 @@
 from shiny import App, ui, render, reactive
+import pandas as pd
+
+# Load Data
+df = pd.read_csv("../data/raw/global_disaster_response_2018_2024.csv")
 
 COUNTRIES = ["Australia",
             "Bangladesh",
@@ -109,11 +113,18 @@ app_ui = ui.page_fillable(
         ),
         # Outputs 
         ui.layout_columns(
-            #  World Map and KPI's
+            #  World Map 
             ui.card("World Map: Countries coloured by number of disasters", full_screen=True),
+            # KPI Cards 
             ui.layout_columns(
-                ui.card('Kpi Card: Loss Ratio $'),
-                ui.card('Kpi Card: Aid Gap $'), 
+                ui.card(
+                    ui.output_ui("kpi_ratio"),
+                    title="Loss Ratio"
+                ),
+                ui.card(
+                    ui.output_ui("kpi_gap"),
+                    title="Aid Gap"
+                ), 
                 col_widths=[12, 12],
                 row_heights=[1, 1]
             ),
@@ -129,6 +140,7 @@ app_ui = ui.page_fillable(
 )
 
 def server(input, output, session):
+    # button handling! 
     @reactive.effect
     @reactive.event(input.select_all_countries)
     def select_all_countries():
@@ -179,5 +191,15 @@ def server(input, output, session):
             selected="mean",
             session=session
         )
+    # Filtered Dataframe 
+    @reactive.calc
+    def filtered_df():
+        filtered = df[
+            (df["country"].isin(input.countries())) &
+            (df["disaster_type"].isin(input.disaster_type())) &
+            (df["date"] >= pd.to_datetime(input.date_range()[0])) &
+            (df["date"] <= pd.to_datetime(input.date_range()[1]))
+        ]
+        return filtered
 
 app = App(app_ui, server)
