@@ -8,6 +8,7 @@ DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
 # Load Data
 df = pd.read_csv(DATA_PATH,
                  parse_dates=["date"])
+
 # Helper Function for kpi_gap() 
 def format_currency(value):
     """Format a numeric value as a human-readable currency string."""
@@ -57,9 +58,20 @@ DISASTER_TYPES = ["Drought",
                   "Volcanic Eruption",
                   "Wildfire"
                 ]
+SUMMARY_CHOICES = {
+                    "mean": "Average", 
+                    "sum": "Total Sum", 
+                    "min": "Minimum", 
+                    "max": "Maximum"
+                }
 
 app_ui = ui.page_fillable(
     ui.panel_title("Disaster Dash"),
+    ui.div(
+    ui.output_ui("active_filters"),
+    class_="mb-3",
+    
+    ),
     ui.layout_sidebar(
         ui.sidebar(
             # Input: User can Check/Uncheck countries
@@ -117,12 +129,7 @@ app_ui = ui.page_fillable(
             ui.input_select(
                 id="summary_stat", 
                 label="Summary Statistic",
-                choices={
-                    "mean": "Average", 
-                    "sum": "Total Sum", 
-                    "min": "Minimum", 
-                    "max": "Maximum"
-                },
+                choices=SUMMARY_CHOICES,
                 selected="mean"
             ),
             ui.input_action_button(
@@ -216,6 +223,46 @@ def server(input, output, session):
             start="2018-01-01",
             end="2024-12-31",
             session=session
+        )
+    # Active Summary of Filter Selection
+    @render.ui
+    def active_filters():
+        countries = input.countries()
+        disasters = input.disaster_type()
+        start, end = input.date_range()
+
+        # Countries formatting 
+        if len(countries) == 0:
+            country_text = "None"
+        elif len(countries) == len(COUNTRIES):
+            country_text = "All Countries"
+        elif len(countries) <= 4:
+            country_text = ", ".join(countries)
+        else:
+            country_text = ", ".join(countries[:3]) + f" +{len(countries)-3} more"
+        # Disasters formatting 
+        if len(disasters) == 0:
+            disaster_text = "None"
+        elif len(disasters) == len(DISASTER_TYPES):
+            disaster_text = "All Types"
+        elif len(disasters) <= 4:
+            disaster_text = ", ".join(disasters)
+        else:
+            disaster_text = ", ".join(disasters[:3]) + f" +{len(disasters)-3} more"
+
+        return ui.div(
+            ui.span("Countries:", class_="fw-semibold me-1"),
+            ui.span(country_text, class_="badge bg-secondary-subtle text-dark me-3"),
+
+            ui.span("Disasters:", class_="fw-semibold me-1"),
+            ui.span(disaster_text, class_="badge bg-secondary-subtle text-dark me-3"),
+
+            ui.span("Dates:", class_="fw-semibold me-1"),
+            ui.span(f"{start} → {end}", class_="badge bg-secondary-subtle text-dark me-3"),
+
+            ui.span("Statistic:", class_="fw-semibold me-1"),
+            ui.span(SUMMARY_CHOICES[input.summary_stat()],
+                 class_="badge bg-secondary-subtle text-dark me-3")
         )
     # Filtered Dataframe 
     @reactive.calc
