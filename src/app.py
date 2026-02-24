@@ -1,6 +1,7 @@
 from shiny import App, ui, render, reactive
 from pathlib import Path
 import pandas as pd
+from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
@@ -64,6 +65,7 @@ SUMMARY_CHOICES = {
                     "min": "Minimum", 
                     "max": "Maximum"
                 }
+LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
 app_ui = ui.page_fillable(
     ui.panel_title("Disaster Dash"),
@@ -163,6 +165,14 @@ app_ui = ui.page_fillable(
             ui.card("Bar Chart of Economic Aid by Disaster Type ($)"),
             col_widths=[6, 6]
         ),
+    ),
+    # Footer 
+    ui.div(
+        ui.span("Global disaster impact & aid dashboard • "),
+        ui.span("Joel Nicholas Peterson, Ojasv Issar, Claire Saunders • "),
+        ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
+        ui.span(f" • Updated {LAST_UPDATED}"),
+        class_="text-center text-muted small py-1"
     )
 )
 
