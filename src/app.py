@@ -2,7 +2,24 @@ from shiny import App, ui, render, reactive
 import pandas as pd
 
 # Load Data
-df = pd.read_csv("../data/raw/global_disaster_response_2018_2024.csv")
+df = pd.read_csv("../data/raw/global_disaster_response_2018_2024.csv",
+                 parse_dates=["date"])
+# Utility Function
+def format_currency(value):
+    """Format a numeric value as a human-readable currency string."""
+
+    sign = "-" if value < 0 else ""
+    value = abs(value)
+    if value >= 1e12:
+        return f"{sign}${value/1e12:.1f}T"
+    elif value >= 1e9:
+        return f"{sign}${value/1e9:.1f}B"
+    elif value >= 1e6:
+        return f"{sign}${value/1e6:.1f}M"
+    elif value >= 1e3:
+        return f"{sign}${value/1e3:.1f}K"
+    else:
+        return f"{sign}${value:.0f}"
 
 COUNTRIES = ["Australia",
             "Bangladesh",
@@ -119,7 +136,7 @@ app_ui = ui.page_fillable(
             ui.layout_columns(
                 ui.card(
                     ui.output_ui("kpi_ratio"),
-                    title="Loss Ratio"
+                    title="Aid Coverage"
                 ),
                 ui.card(
                     ui.output_ui("kpi_gap"),
@@ -201,5 +218,29 @@ def server(input, output, session):
             (df["date"] <= pd.to_datetime(input.date_range()[1]))
         ]
         return filtered
+    @render.ui
+    def kpi_ratio():
+        data = filtered_df()
+
+        total_loss = data["economic_loss_usd"].sum()
+        total_aid = data['aid_amount_usd'].sum()
+
+        if total_loss == 0:
+            ratio = 0
+        else:
+            ratio = (total_aid / total_loss) * 100
+        
+        return ui.h3(f"{ratio:.1f}% Loss Covered")
+    
+    @render.ui
+    def kpi_gap():
+        data = filtered_df()
+
+        total_loss = data["economic_loss_usd"].sum()
+        total_aid = data["aid_amount_usd"].sum()
+        gap = total_loss - total_aid
+
+        return ui.h3(f"{format_currency(gap)} Aid Gap")
+
 
 app = App(app_ui, server)
