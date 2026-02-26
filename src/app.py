@@ -15,6 +15,7 @@ from shiny import App, ui, render, reactive
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 
 # Load Data
@@ -190,8 +191,8 @@ app_ui = ui.page_fillable(
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card("Bar Chart of Economic Loss by Disaster Type ($)"),
-            ui.card("Bar Chart of Economic Aid by Disaster Type ($)"),
+            ui.card(ui.output_plot("bar_loss"), full_screen=True),
+            ui.card(ui.output_plot("bar_aid"), full_screen=True),
             col_widths=[6, 6]
         ),
     ),
@@ -381,5 +382,39 @@ def server(input, output, session):
         gap = total_loss - total_aid
         return format_currency(gap)
 
+    @render.plot
+    def bar_loss():
+        data = filtered_df()
+        stat = input.summary_stat()
+        
+        grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
+        
+        fig, ax = plt.subplots()
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Economic Loss (USD)")
+        ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
+        ax.xaxis.set_major_formatter(
+            plt.FuncFormatter(lambda x, _: format_currency(x))
+        )
+        plt.tight_layout()
+        return fig
+
+    @render.plot
+    def bar_aid():
+        import matplotlib.pyplot as plt
+        data = filtered_df()
+        stat = input.summary_stat()
+        
+        grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
+        
+        fig, ax = plt.subplots()
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Aid Amount (USD)")
+        ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
+        ax.xaxis.set_major_formatter(
+            plt.FuncFormatter(lambda x, _: format_currency(x))
+        )
+        plt.tight_layout()
+        return fig
 
 app = App(app_ui, server)
