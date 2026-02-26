@@ -1,9 +1,8 @@
-## CHANGELOG 
+# CHANGELOG 
 
-### Design and architecture decisions and reasoning
+## Design and architecture decisions and reasoning
 
-#### MILESTONE 2:
-
+## Added:
 
 - Reactivity Diagram: Mermaid markup flowchart based on the app sketch and skeleton. 
 
@@ -13,7 +12,21 @@
 
 - The decision was made to add a country's GDP as a tool-tip
 
-### Future Upgrades
+## Changed:
+
+- Wired up visualizations and KPI cards
+  
+- 
+
+## Fixed:
+
+- 
+
+## Known Issues:
+
+- Data is limited to only countries surveyed
+
+## Future Upgrades: 
 
 - Potential user choice for charting color themes. 
 
