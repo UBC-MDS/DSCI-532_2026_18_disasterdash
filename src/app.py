@@ -1,18 +1,45 @@
+"""
+Disaster Dash: An interactive Shiny dashboard for exploring global disaster
+impacts and humanitarian aid (2018–2024).
+
+Features:
+- Interactive filtering by country, disaster type, and date range
+- KPI cards for Aid Coverage and Aid Gap
+- Aggregated bar charts of economic loss and aid
+- World map visualization of disaster counts
+- Dynamic summary of active filters
+
+All visualizations are powered by a reactive filtered dataset.
+"""
 from shiny import App, ui, render, reactive
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
 
 # Load Data
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
 df = pd.read_csv(DATA_PATH,
                  parse_dates=["date"])
 
 # Helper Function for kpi_gap() 
 def format_currency(value):
-    """Format a numeric value as a human-readable currency string."""
+    """
+    Format a numeric value as a human-readable USD currency string.
+
+    Converts large values into abbreviated format:
+    K (thousands), M (millions), B (billions), T (trillions).
+
+    Parameters
+    ----------
+    value : float or int
+
+    Returns
+    -------
+    str
+        Formatted currency string.
+    """
     sign = "-" if value < 0 else ""
     value = abs(value)
     if value >= 1e12:
@@ -25,7 +52,8 @@ def format_currency(value):
         return f"{sign}${value/1e3:.1f}K"
     else:
         return f"{sign}${value:.0f}"
-
+    
+# Global Variables
 COUNTRIES = ["Australia",
             "Bangladesh",
             "Brazil", 
@@ -67,6 +95,7 @@ SUMMARY_CHOICES = {
                 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
+# Dashboard 
 app_ui = ui.page_fillable(
     ui.panel_title("Disaster Dash"),
     ui.div(
@@ -177,6 +206,17 @@ app_ui = ui.page_fillable(
 )
 
 def server(input, output, session):
+    """
+    Server logic for the Disaster Dash application.
+
+    Responsibilities:
+    - Handle filter selection controls (select all, deselect all, reset)
+    - Maintain a reactive filtered dataset
+    - Compute KPI metrics (aid coverage and aid gap)
+    - Generate aggregated data for bar charts
+    - Generate country-level summaries for map visualization
+    - Render active filter summaries
+    """
     # button handling! 
     @reactive.effect
     @reactive.event(input.select_all_countries)
@@ -277,6 +317,25 @@ def server(input, output, session):
     # Filtered Dataframe 
     @reactive.calc
     def filtered_df():
+        """
+        Return a filtered version of the disaster dataset based on
+        current user input selections.
+
+        Filters applied:
+        - Selected countries
+        - Selected disaster types
+        - Selected date range
+
+        This reactive dataset is used by:
+        - KPI calculations
+        - Bar chart aggregations
+        - Map visualizations
+
+        Returns
+        -------
+        pandas.DataFrame
+            Filtered disaster dataset.
+        """
         filtered = df[
             (df["country"].isin(input.countries())) &
             (df["disaster_type"].isin(input.disaster_type())) &
@@ -287,6 +346,15 @@ def server(input, output, session):
     # KPI Cards 
     @render.text
     def kpi_ratio():
+        """
+        Calculate the percentage of total economic loss covered by aid
+        for the currently filtered dataset.
+
+        Returns
+        -------
+        str
+            Percentage formatted to one decimal place.
+        """
         data = filtered_df()
         total_loss = data["economic_loss_usd"].sum()
         total_aid = data['aid_amount_usd'].sum()
@@ -297,6 +365,16 @@ def server(input, output, session):
         return f"{(total_aid / total_loss) * 100:.1f}%"
     @render.text
     def kpi_gap():
+        """
+        Calculate the Aid Gap for the filtered dataset.
+
+        Aid Gap = total economic loss − total aid received.
+
+        Returns
+        -------
+        str
+            Formatted currency string representing the gap.
+        """
         data = filtered_df()
         total_loss = data["economic_loss_usd"].sum()
         total_aid = data["aid_amount_usd"].sum()
