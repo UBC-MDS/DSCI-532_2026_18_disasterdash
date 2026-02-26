@@ -31,7 +31,15 @@
 ## Reactivity Diagram
 
 ```mermaid
-TBD
+flowchart TD
+    A[/Country/] --> F{{Filtered Data}}
+    B[/Date Range/] --> F
+    C[/Disaster Type/] --> F
+    F --> P1([World Map])
+    F --> P2([KPI card: Avg Loss])
+    F --> P3([KPI card: Avg Aid])
+    F --> P4([Bar chart: Economic Loss])
+    F --> P5([Bar chart: Economic Aid])
 ```
 
 ## Calculation Details
