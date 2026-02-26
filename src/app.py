@@ -161,7 +161,7 @@ app_ui = ui.page_fillable(
                 id="summary_stat", 
                 label="Summary Statistic",
                 choices=SUMMARY_CHOICES,
-                selected="mean"
+                selected="sum"
             ),
             ui.input_action_button(
                 id="reset_button", 
@@ -265,7 +265,7 @@ def server(input, output, session):
         )
         ui.update_select(
             id="summary_stat", 
-            selected="mean",
+            selected="sum",
             session=session
         )
         ui.update_date_range(
