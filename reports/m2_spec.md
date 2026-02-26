@@ -35,11 +35,13 @@ flowchart TD
     A[/Country/] --> F{{Filtered Data}}
     B[/Date Range/] --> F
     C[/Disaster Type/] --> F
-    F --> P1([World Map])
-    F --> P2([KPI card: Avg Loss])
-    F --> P3([KPI card: Avg Aid])
-    F --> P4([Bar chart: Economic Loss])
-    F --> P5([Bar chart: Economic Aid])
+    F --> M([World Map])
+    F --> K1([KPI card: Avg Coverage %])
+    F --> K2([KPI card: Avg Gap $])
+    F --> G{{aggregated_df}}
+    D[/Summary Statistic/] --> G
+    G --> P1([Bar chart: Economic Loss])
+    G --> P2([Bar chart: Economic Aid])
 ```
 
 ## Calculation Details
@@ -51,7 +53,7 @@ flowchart TD
 
 ### `aggregated_df` 
 - **Depends on:** `filtered_df`, `summary_stat`
-- **Transformation:** Groups the filtered dataset by `disaster_type` and applies the selected summary statistic ( `mean`, `sum`, `min` or `max`) to `economic_loss_usd` and `aid_amount_usd`. 
+- **Transformation:** Groups the filtered dataset by `disaster_type` and applies the selected summary statistic (`mean`, `sum`, `min` or `max`) to `economic_loss_usd` and `aid_amount_usd`. The default summary statistic is `sum`, emphasizing aggregate fiscal burden for policy analysis.
 - **Consumed by:** `plot_economic_loss`, `plot_aid_response`
 
 ### KPI Calculations
