@@ -22,26 +22,26 @@
 | `reset_button` | Input | `ui.input_action_button()` | — | #1, #2, #3, #4 |
 | `filtered_df` | Reactive calc | `@reactive.calc` | `countries`, `date_range`, `disaster_type` | #1, #2, #3, #4 |
 | `map_heatmap` | Output | `@render.plot` | `filtered_df` | #2, #3 |
-| `plot_economic_loss` | Output | `@render.plot` | `aggregated_df` | #1, #3, #4 |
-| `plot_aid_response` | Output | `@render.plot` | `aggregated_df` | #1, #3,  #4 |
+| `plot_economic_loss` | Output | `@render.plot` | `filtered_df`, `summary_stat` | #1, #3, #4 |
+| `plot_aid_response` | Output | `@render.plot` | `filtered_df`, `summary_stat` | #1, #3,  #4 |
 | `kpi_ratio` | Output | `@render.text` | `filtered_df` | #1, #3, #4 |
 | `kpi_gap` | Output | `@render.text` | `filtered_df` | #1, #3, #4 |
-| `aggregated_df` | Reactive calc | `@reactive.calc` | `filtered_df`, `summary_stat` | #1, #4 |
 
 ## Reactivity Diagram
 
 ```mermaid
 flowchart TD
-    A[/Country/] --> F{{Filtered Data}}
+    A[/Country/] --> F{{filtered_df}}
     B[/Date Range/] --> F
     C[/Disaster Type/] --> F
     F --> M([World Map])
-    F --> K1([KPI card: Avg Coverage %])
-    F --> K2([KPI card: Avg Gap $])
-    F --> G{{aggregated_df}}
-    D[/Summary Statistic/] --> G
-    G --> P1([Bar chart: Economic Loss])
-    G --> P2([Bar chart: Economic Aid])
+    F --> K1([KPI: Aid Coverage %])
+    F --> K2([KPI: Aid Gap $])
+    F --> P1([Bar chart: Economic Loss])
+    F --> P2([Bar chart: Economic Aid])
+
+    D[/Summary Statistic/] --> P1
+    D --> P2
 ```
 
 ## Calculation Details
@@ -49,12 +49,7 @@ flowchart TD
 ### `filtered_df`
 - **Depends on:** `countries`, `date_range`, `disaster_type`
 - **Transformation:** Filters the full disaster dataset to rows matching the selected disaster type(s), within the selected date range, and for the selected countries.
-- **Consumed by:** `map_heatmap`, `aggregated_df`, `kpi_ratio`, `kpi_gap`
-
-### `aggregated_df` 
-- **Depends on:** `filtered_df`, `summary_stat`
-- **Transformation:** Groups the filtered dataset by `disaster_type` and applies the selected summary statistic (`mean`, `sum`, `min` or `max`) to `economic_loss_usd` and `aid_amount_usd`. The default summary statistic is `sum`, emphasizing aggregate fiscal burden for policy analysis.
-- **Consumed by:** `plot_economic_loss`, `plot_aid_response`
+- **Consumed by:** `map_heatmap`, `kpi_ratio`, `kpi_gap`, `plot_economic_loss`, `plot_aid_response`
 
 ### KPI Calculations
 - **`kpi_ratio`**: `sum(aid_amount_usd) / sum(economic_loss_usd) × 100` — displayed as a percentage representing how much of total economic loss is covered by aid across the filtered selection.
