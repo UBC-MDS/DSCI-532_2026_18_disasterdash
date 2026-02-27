@@ -101,7 +101,7 @@ app_ui = ui.page_fillable(
     ui.panel_title(ui.h6("Disaster Dash", style="margin: 0; padding: 0;")),
     ui.div(
     ui.output_ui("active_filters"),
-    class_="mb-3",
+    class_="mb-1",
     
     ),
     ui.layout_sidebar(
