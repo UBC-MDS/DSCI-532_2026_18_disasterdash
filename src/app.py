@@ -665,34 +665,6 @@ app_ui = ui.page_fillable(
                     ),
                 ),
 
-                # ── Tab 2: Trends ────────────────────────────────────────────
-                ui.nav_panel(
-                    "📈  Trends",
-                    ui.div(
-                        ui.card(
-                            ui.card_header("📅  Monthly Disaster Events & Casualties Over Time"),
-                            ui.output_ui("timeseries_container"),
-                            full_screen=True,
-                        ),
-                        class_="main-inner",
-                        style="padding-top:0;",
-                    ),
-                ),
-
-                # ── Tab 3: Data Explorer ─────────────────────────────────────
-                ui.nav_panel(
-                    "🔍  Data Explorer",
-                    ui.div(
-                        ui.card(
-                            ui.card_header("📋  Filtered Event Records"),
-                            ui.output_data_frame("data_table"),
-                            full_screen=True,
-                        ),
-                        class_="main-inner",
-                        style="padding-top:0;",
-                    ),
-                ),
-
                 id="main_tabs",
             ),
 
@@ -801,19 +773,14 @@ def server(input, output, session):
     def kpi_grid():
         data = filtered_df()
         if data.empty:
-            events_val = "—"; cas_val = "—"; cov_val = "—"; gap_val = "—"
+            cov_val = "—"; gap_val = "—"
         else:
-            n_events = len(data)
-            n_cas    = int(data["casualties"].sum())
-            loss     = data["economic_loss_usd"].sum()
-            aid      = data["aid_amount_usd"].sum()
-            cov      = (aid / loss * 100) if loss > 0 else 0.0
-            gap      = loss - aid
-
-            events_val = fmt_num(n_events)
-            cas_val    = fmt_num(n_cas)
-            cov_val    = f"{cov:.1f}%"
-            gap_val    = fmt_currency(gap)
+            loss    = data["economic_loss_usd"].sum()
+            aid     = data["aid_amount_usd"].sum()
+            cov     = (aid / loss * 100) if loss > 0 else 0.0
+            gap     = loss - aid
+            cov_val = f"{cov:.1f}%"
+            gap_val = fmt_currency(gap)
 
         def kpi_box(cls, icon, value, title):
             return ui.div(
@@ -824,12 +791,10 @@ def server(input, output, session):
             )
 
         return ui.div(
-            kpi_box("kpi-events",   "🌪️",  events_val, "Disaster Events"),
-            kpi_box("kpi-cas",      "👥",  cas_val,    "Total Casualties"),
-            kpi_box("kpi-coverage", "🛡️",  cov_val,    "Aid Coverage"),
-            kpi_box("kpi-gap",      "⚠️",  gap_val,    "Funding Gap"),
+            kpi_box("kpi-coverage", "🛡️", cov_val, "Aid Coverage"),
+            kpi_box("kpi-gap",      "⚠️", gap_val, "Funding Gap"),
             class_="kpi-grid",
-            style="height:100%;",
+            style="height:100%; grid-template-columns:1fr; grid-template-rows:1fr 1fr;",
         )
 
     # ── Map ───────────────────────────────────────────────────────────────────
