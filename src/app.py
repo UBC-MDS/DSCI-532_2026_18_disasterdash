@@ -386,6 +386,9 @@ def server(input, output, session):
         total_aid = data["aid_amount_usd"].sum()
         gap = total_loss - total_aid
         return format_currency(gap)
+    
+    def currency_formatter(x, pos):              # helper to pass into FuncFormatter
+        return format_currency(x)
 
     @render.plot
     def bar_loss():
@@ -402,10 +405,10 @@ def server(input, output, session):
 
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Loss (USD)")          # xlabel not ylabel
+        ax.set_xlabel("Economic Loss (USD)")         
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  # xaxis not yaxis
-        plt.tight_layout()                            # no xticks rotation needed
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter)) 
+        plt.tight_layout()                           
         return fig
 
     @render.plot
@@ -423,10 +426,10 @@ def server(input, output, session):
 
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Aid (USD)")          # xlabel not ylabel
+        ax.set_xlabel("Economic Aid (USD)")        
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  # xaxis not yaxis
-        plt.tight_layout()                            # no xticks rotation needed
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  
+        plt.tight_layout()                          
         return fig
 
 app = App(app_ui, server)
