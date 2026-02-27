@@ -199,10 +199,10 @@ app_ui = ui.page_fillable(
     # Footer 
     ui.div(
         ui.span("Global disaster impact & aid dashboard • "),
-        ui.span("Joel Nicholas Peterson, Ojasv Issar, Claire Saunders • "),
+        ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        class_="text-center text-muted small py-0 mt-1"
+        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 2px 0; margin: 0;"
     )
 )
 
