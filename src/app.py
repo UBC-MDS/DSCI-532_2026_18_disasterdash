@@ -314,7 +314,7 @@ html, body, .bslib-page-fill {{
 #filter-strip {{
     background: {CARD};
     border-bottom: 1px solid {BORDER};
-    padding: 7px 16px;
+    padding: 7px 16px 7px 48px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
