@@ -422,7 +422,7 @@ def server(input, output, session):
         """
         data = filtered_df()
         stat = input.summary_stat()
-        grouped = data.groupby("disaster_type")["economic_aid_usd"].agg(stat).sort_values()
+        grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
 
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.barh(grouped.index, grouped.values)
