@@ -190,14 +190,14 @@ app_ui = ui.page_fillable(
                 col_widths=[12, 12],
                 row_heights=[1, 1]
             ),
-            col_widths=[9,3]
+            col_widths=[9,3],
             style="height: 450px;"   
         ),
         ui.layout_columns(
             # Bar Charts 
             ui.card(ui.output_plot("bar_loss"), full_screen=True),
             ui.card(ui.output_plot("bar_aid"), full_screen=True),
-            col_widths=[6, 6]
+            col_widths=[6, 6],
             style="height: 350px;"   
         ),
         style="flex: 1 1 0; min-height: 0; overflow: hidden;"
