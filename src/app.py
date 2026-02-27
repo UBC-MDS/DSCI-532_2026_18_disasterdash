@@ -195,8 +195,8 @@ app_ui = ui.page_fillable(
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card(ui.output_plot("bar_loss"), full_screen=True, height="400px"),
-            ui.card(ui.output_plot("bar_aid"), full_screen=True, height="400px"),
+            ui.card(ui.output_plot("bar_loss", height="350px"), full_screen=True, height="400px"),
+            ui.card(ui.output_plot("bar_aid", height="350px"), full_screen=True, height="400px"),
             col_widths=[6, 6],
             style="height: 350px;"   
         ),
@@ -387,7 +387,7 @@ def server(input, output, session):
         gap = total_loss - total_aid
         return format_currency(gap)
 
-    @render.plot
+    @render.plot (alt="Economic Loss by Disaster Type", bbox_inches="tight")
     def bar_loss():
         """
         Renders a bar chart plotting the economic loss with using matplotlib pyplot.
@@ -412,7 +412,7 @@ def server(input, output, session):
         plt.tight_layout()
         return fig
 
-    @render.plot
+    @render.plot (alt="Economic Aid by Disaster Type", bbox_inches="tight")
     def bar_aid():
         """
         Renders a bar chart plotting the economic aid with using matplotlib pyplot.
