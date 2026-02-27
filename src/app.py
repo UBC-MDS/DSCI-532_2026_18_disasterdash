@@ -98,7 +98,7 @@ LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
 # Dashboard 
 app_ui = ui.page_fillable(
-    ui.panel_title("Disaster Dash"),
+    ui.panel_title(ui.h6("Disaster Dash", style="margin: 0; padding: 0;")),
     ui.div(
     ui.output_ui("active_filters"),
     class_="mb-3",
@@ -202,7 +202,7 @@ app_ui = ui.page_fillable(
         ui.span("Joel Nicholas Peterson, Ojasv Issar, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        class_="text-center text-muted small py-1"
+        class_="text-center text-muted small py-0 mt-1"
     )
 )
 
