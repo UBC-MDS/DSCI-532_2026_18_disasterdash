@@ -2,17 +2,16 @@
 Disaster Dash (v2) — Improved UI/UX & Functionality
 Global Disaster Impact & Humanitarian Aid (2018–2024)
 
-Stakeholder-driven improvements:
-  • Tab-based layout: Overview · Trends · Data Explorer
-  • 4 KPI cards (Events, Casualties, Aid Coverage, Aid Gap)
-  • Time-series trend chart (monthly disasters / casualties)
-  • Country bubble chart (loss vs aid, sized by casualties)
-  • Sortable data table with formatted columns
-  • Cleaner sidebar without duplicate header
-  • Map → Choropleth now shows aid-coverage ratio (more insightful)
-  • Consistent empty-state handling across all panels
+Features:
+  • Single-page Overview layout (map, KPI cards, bar charts)
+  • 2 KPI cards: Aid Coverage %, Funding Gap
+  • Choropleth map with switchable metric (frequency, coverage, casualties, loss)
+  • Horizontal bar charts: Economic Loss & Aid Amount by disaster type
+  • Configurable summary statistic (mean, sum, min, max) for bar charts
+  • Active filter strip banner
+  • Searchable multi-select inputs for country and disaster type
   • Better typography (Syne + Instrument Sans)
-  • Accessible labels restored (visually hidden, not display:none)
+  • Accessible labels (visually hidden, not display:none)
 """
 
 from shiny import App, ui, render, reactive
@@ -365,7 +364,7 @@ html, body, .bslib-page-fill {{
 /* ── KPI CARDS ── */
 .kpi-grid {{
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr;
     gap: 12px;
     height: 100%;
@@ -813,7 +812,7 @@ def server(input, output, session):
             kpi_box("kpi-coverage", "🛡️", cov_val, "Aid Coverage"),
             kpi_box("kpi-gap",      "⚠️", gap_val, "Funding Gap"),
             class_="kpi-grid",
-            style="height:100%; grid-template-columns:1fr; grid-template-rows:1fr 1fr;",
+            style="height:100%;",
         )
 
     # ── Map ───────────────────────────────────────────────────────────────────
@@ -964,295 +963,6 @@ def server(input, output, session):
     @render_widget
     def bar_aid():
         return _make_bar("aid_amount_usd", "Aid Amount (USD)")
-
-    # ── Time-series chart ─────────────────────────────────────────────────────
-    @render.ui
-    def timeseries_container():
-        if filtered_df().empty:
-            return empty_state("📅", "No trend data", "Adjust filters to see temporal trends")
-        return output_widget("timeseries_plot")
-
-    @render_widget
-    def timeseries_plot():
-        data = filtered_df()
-        if data.empty:
-            return go.Figure()
-
-        data = data.copy()
-        data["ym"] = data["date"].dt.to_period("M").dt.to_timestamp()
-        ts = (
-            data.groupby("ym")
-            .agg(
-                events=("disaster_type",    "count"),
-                casualties=("casualties",   "sum"),
-                total_loss=("economic_loss_usd", "sum"),
-                total_aid=("aid_amount_usd",     "sum"),
-            )
-            .reset_index()
-        )
-        ts["loss_fmt"] = ts["total_loss"].apply(fmt_currency)
-        ts["aid_fmt"]  = ts["total_aid"].apply(fmt_currency)
-
-        fig = go.Figure()
-
-        # Shaded gap area
-        fig.add_trace(go.Scatter(
-            x=ts["ym"], y=ts["casualties"] / ts["casualties"].max() * ts["events"].max() if ts["casualties"].max() > 0 else ts["casualties"],
-            fill="tozeroy",
-            fillcolor="rgba(245,158,11,0.07)",
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo="skip",
-        ))
-
-        # Events line
-        fig.add_trace(go.Scatter(
-            x=ts["ym"], y=ts["events"],
-            mode="lines+markers",
-            name="Events",
-            line=dict(color=BLUE, width=2.5, shape="spline"),
-            marker=dict(size=5, color=BLUE, line=dict(width=1.5, color="#fff")),
-            customdata=ts[["loss_fmt", "aid_fmt", "casualties"]],
-            hovertemplate="<b>%{x|%b %Y}</b><br>Events: <b>%{y}</b><br>Loss: %{customdata[0]}<br>Aid: %{customdata[1]}<br>Casualties: %{customdata[2]:,}<extra></extra>",
-        ))
-
-        # Casualties line (secondary y)
-        if ts["casualties"].max() > 0:
-            fig.add_trace(go.Scatter(
-                x=ts["ym"], y=ts["casualties"],
-                mode="lines",
-                name="Casualties",
-                line=dict(color=RED, width=1.5, dash="dot", shape="spline"),
-                yaxis="y2",
-                hovertemplate="<b>%{x|%b %Y}</b><br>Casualties: <b>%{y:,}</b><extra></extra>",
-            ))
-
-        fig.update_layout(
-            xaxis=dict(
-                title=None,
-                tickfont=dict(size=9, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-                showline=True, linecolor=BORDER,
-            ),
-            yaxis=dict(
-                title=dict(text="Disaster Events", font=dict(size=9, color=BLUE, family="Instrument Sans")),
-                tickfont=dict(size=9, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-            ),
-            yaxis2=dict(
-                title=dict(text="Casualties", font=dict(size=9, color=RED, family="Instrument Sans")),
-                tickfont=dict(size=9, color=T_SEC, family="Instrument Sans"),
-                overlaying="y", side="right", showgrid=False, zeroline=False,
-            ),
-            legend=dict(
-                orientation="h", y=1.06, x=0.5, xanchor="center",
-                font=dict(size=10, family="Instrument Sans"),
-                bgcolor="rgba(255,255,255,0.8)", borderwidth=0,
-            ),
-            margin=dict(l=60, r=60, t=32, b=44),
-            height=300,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            hovermode="x unified",
-            hoverlabel=dict(bgcolor="#fff", font_color=T_PRI, font_size=11,
-                           font_family="Instrument Sans", bordercolor=NAVY),
-        )
-        return fig
-
-    # ── Bubble chart: loss vs aid per country ─────────────────────────────────
-    @render.ui
-    def bubble_container():
-        if filtered_df().empty:
-            return empty_state("🌐", "No country data", "Select countries to compare")
-        return output_widget("bubble_plot")
-
-    @render_widget
-    def bubble_plot():
-        data = filtered_df()
-        if data.empty:
-            return go.Figure()
-
-        agg = (
-            data.groupby("country")
-            .agg(
-                total_loss=("economic_loss_usd", "sum"),
-                total_aid=("aid_amount_usd",     "sum"),
-                casualties=("casualties",         "sum"),
-                disasters=("disaster_type",       "count"),
-            )
-            .reset_index()
-        )
-        agg["coverage"] = (agg["total_aid"] / agg["total_loss"].replace(0, float("nan")) * 100).round(1)
-        agg["loss_fmt"] = agg["total_loss"].apply(fmt_currency)
-        agg["aid_fmt"]  = agg["total_aid"].apply(fmt_currency)
-
-        fig = px.scatter(
-            agg,
-            x="total_loss", y="total_aid",
-            size="casualties",
-            color="coverage",
-            hover_name="country",
-            hover_data={
-                "total_loss": False, "total_aid": False,
-                "casualties": True, "disasters": True,
-                "coverage": True, "loss_fmt": True, "aid_fmt": True,
-            },
-            labels={
-                "total_loss": "Economic Loss (USD)",
-                "total_aid":  "Aid Amount (USD)",
-                "coverage":   "Aid Coverage (%)",
-                "casualties": "Casualties",
-                "disasters":  "# Events",
-                "loss_fmt":   "Loss",
-                "aid_fmt":    "Aid",
-            },
-            color_continuous_scale="RdYlGn",
-            size_max=50,
-        )
-        # 1:1 reference line
-        mx = max(agg["total_loss"].max(), agg["total_aid"].max()) * 1.05
-        fig.add_shape(
-            type="line", x0=0, y0=0, x1=mx, y1=mx,
-            line=dict(color=T_MUTED, dash="dash", width=1),
-        )
-        fig.add_annotation(
-            x=mx * 0.85, y=mx * 0.93,
-            text="Aid = Loss", showarrow=False,
-            font=dict(size=9, color=T_MUTED, family="Instrument Sans"),
-        )
-        fig.update_layout(
-            xaxis=dict(
-                title=dict(text="Economic Loss (USD)", font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-            ),
-            yaxis=dict(
-                title=dict(text="Aid Amount (USD)", font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-            ),
-            coloraxis_colorbar=dict(
-                title=dict(text="Aid Coverage %", font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                thickness=10, len=0.65,
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                outlinewidth=0,
-            ),
-            margin=dict(l=60, r=80, t=12, b=44),
-            height=270,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            showlegend=False,
-            hoverlabel=dict(bgcolor="#fff", font_color=T_PRI, font_size=11,
-                           font_family="Instrument Sans", bordercolor=NAVY),
-        )
-        return fig
-
-    # ── Scatter: severity vs response time ────────────────────────────────────
-    @render.ui
-    def scatter_container():
-        if filtered_df().empty:
-            return empty_state("🔥", "No severity data", "Select disaster types to see patterns")
-        return output_widget("scatter_plot")
-
-    @render_widget
-    def scatter_plot():
-        data = filtered_df()
-        if data.empty:
-            return go.Figure()
-
-        agg = (
-            data.groupby("disaster_type")
-            .agg(
-                avg_severity=("severity_index",      "mean"),
-                avg_response=("response_time_hours", "mean"),
-                total_loss=("economic_loss_usd",     "sum"),
-                count=("disaster_type",              "count"),
-            )
-            .reset_index()
-        )
-        agg["loss_fmt"] = agg["total_loss"].apply(fmt_currency)
-
-        fig = px.scatter(
-            agg,
-            x="avg_severity", y="avg_response",
-            size="total_loss",
-            text="disaster_type",
-            color="avg_severity",
-            hover_data={
-                "avg_severity": ":.2f",
-                "avg_response": ":.1f",
-                "loss_fmt": True,
-                "count": True,
-                "total_loss": False,
-            },
-            labels={
-                "avg_severity": "Avg Severity Index",
-                "avg_response": "Avg Response Time (hrs)",
-                "loss_fmt":     "Total Loss",
-                "count":        "# Events",
-            },
-            color_continuous_scale="OrRd",
-            size_max=45,
-        )
-        fig.update_traces(textposition="top center", textfont=dict(size=8, family="Instrument Sans"))
-        fig.update_layout(
-            xaxis=dict(
-                title=dict(text="Avg Severity Index", font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-            ),
-            yaxis=dict(
-                title=dict(text="Avg Response Time (hrs)", font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False,
-            ),
-            showlegend=False,
-            coloraxis_showscale=False,
-            margin=dict(l=60, r=20, t=12, b=44),
-            height=270,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            hoverlabel=dict(bgcolor="#fff", font_color=T_PRI, font_size=11,
-                           font_family="Instrument Sans", bordercolor=NAVY),
-        )
-        return fig
-
-    # ── Data Table ────────────────────────────────────────────────────────────
-    @render.data_frame
-    def data_table():
-        data = filtered_df().copy()
-        if data.empty:
-            return render.DataGrid(data)
-
-        # Format for display
-        display = data[[
-            "date", "country", "disaster_type",
-            "casualties", "severity_index",
-            "economic_loss_usd", "aid_amount_usd",
-            "response_time_hours",
-        ]].copy()
-
-        display["date"]              = display["date"].dt.strftime("%Y-%m-%d")
-        display["economic_loss_usd"] = display["economic_loss_usd"].apply(fmt_currency)
-        display["aid_amount_usd"]    = display["aid_amount_usd"].apply(fmt_currency)
-        display["casualties"]        = display["casualties"].apply(lambda x: f"{x:,}")
-        display["severity_index"]    = display["severity_index"].round(2)
-        display["response_time_hours"] = display["response_time_hours"].round(1)
-
-        display.columns = [
-            "Date", "Country", "Disaster Type",
-            "Casualties", "Severity Index",
-            "Economic Loss", "Aid Amount",
-            "Response Time (hrs)",
-        ]
-        display = display.sort_values("Date", ascending=False)
-
-        return render.DataGrid(
-            display,
-            filters=True,
-            height="520px",
-            summary=True,
-        )
 
 
 app = App(app_ui, server)
