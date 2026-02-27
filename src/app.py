@@ -401,12 +401,11 @@ def server(input, output, session):
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
 
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Loss (USD)")
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Economic Loss (USD)")          # xlabel not ylabel
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: format_currency(x)))
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  # xaxis not yaxis
+        plt.tight_layout()                            # no xticks rotation needed
         return fig
 
     @render.plot
@@ -420,15 +419,14 @@ def server(input, output, session):
         """
         data = filtered_df()
         stat = input.summary_stat()
-        grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
+        grouped = data.groupby("disaster_type")["economic_aid_usd"].agg(stat).sort_values()
 
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Aid (USD)")
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Economic Aid (USD)")          # xlabel not ylabel
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: format_currency(x)))
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  # xaxis not yaxis
+        plt.tight_layout()                            # no xticks rotation needed
         return fig
 
 app = App(app_ui, server)
