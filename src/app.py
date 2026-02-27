@@ -403,13 +403,13 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4.5))
-        ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Loss (USD)")         
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter)) 
-        plt.subplots_adjust(left=0.25)
-        plt.tight_layout()                           
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
         return fig
 
     @render.plot
@@ -425,13 +425,13 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4.5))
-        ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Aid (USD)")        
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  
-        plt.subplots_adjust(left=0.25)
-        plt.tight_layout()                          
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
         return fig
 
 app = App(app_ui, server)
