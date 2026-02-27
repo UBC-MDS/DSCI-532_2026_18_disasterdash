@@ -102,6 +102,8 @@ app_ui = ui.page_fillable(
     ui.div(
     ui.output_ui("active_filters"),
     class_="mb-1",
+    padding="5px",
+    gap="0px",
     
     ),
     ui.layout_sidebar(
@@ -204,8 +206,7 @@ app_ui = ui.page_fillable(
         ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 0; margin: 0; height: 16px; min-height: 0; overflow: hidden; flex-shrink: 0;"
-    )
+        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 2px 0; margin: 0; height: auto; display: block; flex-shrink: 0; flex-grow: 0;"    )
 )
 
 def server(input, output, session):
