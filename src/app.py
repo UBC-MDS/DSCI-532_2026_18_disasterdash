@@ -394,7 +394,8 @@ def server(input, output, session):
         ax.set_ylabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()]) 
-        plt.xticks(rotation=45, ha="right")
+        plt.subplots_adjust(bottom=0.25, left=0.15) 
+        plt.yticks(rotation=45, ha="right")
         plt.tight_layout()
         return fig
 
@@ -410,7 +411,8 @@ def server(input, output, session):
         ax.set_ylabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()])  
-        plt.xticks(rotation=45, ha="right")
+        plt.yticks(rotation=45, ha="right")
+        plt.subplots_adjust(bottom=0.25, left=0.15) 
         plt.tight_layout()
         return fig
 
