@@ -5,42 +5,53 @@ impacts and humanitarian aid (2018–2024).
 Features:
 - Interactive filtering by country, disaster type, and date range
 - KPI cards for Aid Coverage and Aid Gap
-- Aggregated bar charts of economic loss and aid
-- World map visualization of disaster counts
+- Aggregated bar charts of economic loss and aid (Plotly, cividis, tooltips)
+- World choropleth map coloured by number of disasters (cividis)
 - Dynamic summary of active filters
-
-All visualizations are powered by a reactive filtered dataset.
 """
+
 from shiny import App, ui, render, reactive
+from shinywidgets import output_widget, render_widget
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 
-# Load Data
+# ── Load Data ──────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
-df = pd.read_csv(DATA_PATH,
-                 parse_dates=["date"])
+df = pd.read_csv(DATA_PATH, parse_dates=["date"])
 
-# Helper Function for kpi_gap() 
+
+# ── Country → ISO-3 mapping (for choropleth) ───────────────────────────────────
+ISO3 = {
+    "Australia":      "AUS",
+    "Bangladesh":     "BGD",
+    "Brazil":         "BRA",
+    "Canada":         "CAN",
+    "Chile":          "CHL",
+    "China":          "CHN",
+    "France":         "FRA",
+    "Germany":        "DEU",
+    "Greece":         "GRC",
+    "India":          "IND",
+    "Indonesia":      "IDN",
+    "Italy":          "ITA",
+    "Japan":          "JPN",
+    "Mexico":         "MEX",
+    "Nigeria":        "NGA",
+    "Philippines":    "PHL",
+    "South Africa":   "ZAF",
+    "Spain":          "ESP",
+    "Turkey":         "TUR",
+    "United States":  "USA",
+}
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def format_currency(value):
-    """
-    Format a numeric value as a human-readable USD currency string.
-
-    Converts large values into abbreviated format:
-    K (thousands), M (millions), B (billions), T (trillions).
-
-    Parameters
-    ----------
-    value : float or int
-
-    Returns
-    -------
-    str
-        Formatted currency string.
-    """
     sign = "-" if value < 0 else ""
     value = abs(value)
     if value >= 1e12:
@@ -53,385 +64,342 @@ def format_currency(value):
         return f"{sign}${value/1e3:.1f}K"
     else:
         return f"{sign}${value:.0f}"
-    
-# Global Variables
-COUNTRIES = ["Australia",
-            "Bangladesh",
-            "Brazil", 
-            "Canada",
-            "Chile",
-            "China",
-            "France", 
-            "Germany",
-            "Greece",
-            "India",
-            "Indonesia", 
-            "Italy",
-            "Japan",
-            "Mexico",
-            "Nigeria",
-            "Philippines",
-            "South Africa",
-            "Spain", 
-            "Turkey",
-            "United States"
-            ]
 
-DISASTER_TYPES = ["Drought", 
-                  "Earthquake",
-                  "Extreme Heat",
-                  "Flood",
-                  "Hurricane",
-                  "Landslide",
-                  "Storm Surge",
-                  "Tornado",
-                  "Volcanic Eruption",
-                  "Wildfire"
-                ]
+
+PLOTLY_CONFIG = {"displayModeBar": False}   # hide plotly toolbar for cleanliness
+
+
+# ── Global constants ───────────────────────────────────────────────────────────
+COUNTRIES = sorted(ISO3.keys())
+
+DISASTER_TYPES = [
+    "Drought", "Earthquake", "Extreme Heat", "Flood", "Hurricane",
+    "Landslide", "Storm Surge", "Tornado", "Volcanic Eruption", "Wildfire",
+]
+
 SUMMARY_CHOICES = {
-                    "mean": "Average", 
-                    "sum": "Total Sum", 
-                    "min": "Minimum", 
-                    "max": "Maximum"
-                }
+    "mean": "Average",
+    "sum":  "Total Sum",
+    "min":  "Minimum",
+    "max":  "Maximum",
+}
+
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
-# Dashboard 
+
+# ── UI ─────────────────────────────────────────────────────────────────────────
 app_ui = ui.page_fillable(
-    ui.panel_title(ui.h6("Disaster Dash", style="margin: 0; padding: 0;")),
-    ui.div(
-    ui.output_ui("active_filters"),
-    class_="mb-1",
-    padding="5px",
-    gap="0px",
-    
+    ui.tags.head(
+        ui.tags.style("""
+            .value-box-value { font-size: 1.6rem !important; }
+            .sidebar { font-size: 0.85rem; }
+            .card { border-radius: 8px; }
+            .badge { font-size: 0.78rem; }
+        """)
     ),
+
+    ui.panel_title(ui.h5("Disaster Dash", style="margin:0; padding:0;")),
+
+    ui.div(
+        ui.output_ui("active_filters"),
+        class_="mb-1",
+        style="padding: 4px 8px;",
+    ),
+
     ui.layout_sidebar(
-        
         ui.sidebar(
-            # Input: User can Check/Uncheck countries
             ui.input_checkbox_group(
-                id="countries", 
-                label="Countries", 
+                id="countries",
+                label="Countries",
                 choices={c: c for c in COUNTRIES},
                 selected=COUNTRIES,
             ),
-            # Buttons for All or None Countries 
             ui.div(
-                ui.input_action_button(
-                    id="select_all_countries",
-                    label="All", 
-                    width="50%"
-                ),
-                ui.input_action_button(
-                    id="deselect_all_countries",
-                    label="None", 
-                    width="50%"
-                ),
-                style="display: flex; gap: 5px;"
+                ui.input_action_button("select_all_countries", "All",  width="50%"),
+                ui.input_action_button("deselect_all_countries", "None", width="50%"),
+                style="display:flex; gap:5px;",
             ),
-            # Date Range Toggle
+            ui.hr(),
             ui.input_date_range(
-                id="date_range", 
+                id="date_range",
                 label="Date Range",
-                start="2018-01-01",
-                end="2024-12-31",
-                min="2018-01-01",
-                max="2024-12-31"
+                start="2018-01-01", end="2024-12-31",
+                min="2018-01-01",   max="2024-12-31",
             ),
-            # Input: User can check/uncheck disaster boxes
+            ui.hr(),
             ui.input_checkbox_group(
                 id="disaster_type",
                 label="Disaster Type",
                 choices={d: d for d in DISASTER_TYPES},
                 selected=DISASTER_TYPES,
             ),
-            # All or None buttons for disaster types 
             ui.div(
-                ui.input_action_button(
-                    id="select_all_disasters",
-                    label="All", 
-                    width="50%"
-                ),
-                ui.input_action_button(
-                    id="deselect_all_disasters",
-                    label="None", 
-                    width="50%"
-                ),
-                style="display: flex; gap:5px;"
+                ui.input_action_button("select_all_disasters",   "All",  width="50%"),
+                ui.input_action_button("deselect_all_disasters", "None", width="50%"),
+                style="display:flex; gap:5px;",
             ),
-            # Summary Statistic Drop Down Menu 
+            ui.hr(),
             ui.input_select(
-                id="summary_stat", 
+                id="summary_stat",
                 label="Summary Statistic",
                 choices=SUMMARY_CHOICES,
-                selected="sum"
+                selected="sum",
             ),
-            ui.input_action_button(
-                id="reset_button", 
-                label="Reset Filters"
-                ),
+            ui.input_action_button("reset_button", "Reset Filters", width="100%"),
             open="desktop",
         ),
-        # Outputs 
+
+        # ── Row 1: Map + KPI cards ─────────────────────────────────────────────
         ui.layout_columns(
-            #  World Map 
-            ui.card("World Map: Countries coloured by number of disasters", full_screen=True),
-            # KPI Cards 
+            ui.card(
+                ui.card_header("World Map — Countries coloured by number of disasters"),
+                output_widget("map_plot"),
+                full_screen=True,
+            ),
             ui.layout_columns(
                 ui.value_box(
                     "Aid Coverage",
-                    ui.output_text("kpi_ratio")
+                    ui.output_text("kpi_ratio"),
                 ),
                 ui.value_box(
                     "Aid Gap",
-                    ui.output_text("kpi_gap")
-                ), 
+                    ui.output_text("kpi_gap"),
+                ),
                 col_widths=[12, 12],
-                row_heights=[1, 1]
             ),
-            col_widths=[9,3],
-            style="height: 450px;"   
+            col_widths=[8, 4],
+            style="height:420px;",
         ),
+
+        # ── Row 2: Bar charts ──────────────────────────────────────────────────
         ui.layout_columns(
-            # Bar Charts 
-            ui.card(ui.output_plot("bar_loss", height="450px"), full_screen=True),
-            ui.card(ui.output_plot("bar_aid", height="450px"), full_screen=True),
+            ui.card(
+                ui.card_header("Economic Loss by Disaster Type"),
+                output_widget("bar_loss"),
+                full_screen=True,
+            ),
+            ui.card(
+                ui.card_header("Aid Amount by Disaster Type"),
+                output_widget("bar_aid"),
+                full_screen=True,
+            ),
             col_widths=[6, 6],
-            style="height: 450px;"   
+            style="height:420px;",
         ),
-        style="flex: 1 1 0; min-height: 0; overflow: hidden;"
+
+        style="flex:1 1 0; min-height:0; overflow:hidden;",
     ),
-    # Footer 
+
+    # Footer
     ui.div(
-        ui.span("Global disaster impact & aid dashboard • "),
-        ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
+        ui.span("Global Disaster Impact & Aid Dashboard  •  "),
+        ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  •  "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
-        ui.span(f" • Updated {LAST_UPDATED}"),
-        style="text-align: center; color: #888; font-size: 8;")
+        ui.span(f"  •  Updated {LAST_UPDATED}"),
+        style="text-align:center; color:#888; font-size:0.75rem; padding:6px;",
+    ),
 )
 
-def server(input, output, session):
-    """
-    Server logic for the Disaster Dash application.
 
-    Responsibilities:
-    - Handle filter selection controls (select all, deselect all, reset)
-    - Maintain a reactive filtered dataset
-    - Compute KPI metrics (aid coverage and aid gap)
-    - Generate aggregated data for bar charts
-    - Generate country-level summaries for map visualization
-    - Render active filter summaries
-    """
-    # button handling! 
+# ── Server ─────────────────────────────────────────────────────────────────────
+def server(input, output, session):
+
+    # ── Button handlers ────────────────────────────────────────────────────────
     @reactive.effect
     @reactive.event(input.select_all_countries)
-    def select_all_countries():
-        ui.update_checkbox_group(
-            id="countries", 
-            selected=COUNTRIES,
-            session=session
-        )
+    def _(): ui.update_checkbox_group("countries",    selected=COUNTRIES,     session=session)
+
     @reactive.effect
     @reactive.event(input.deselect_all_countries)
-    def deselect_all_countries():
-        ui.update_checkbox_group(
-            id="countries", 
-            selected=[],
-            session=session
-        )
+    def _(): ui.update_checkbox_group("countries",    selected=[],            session=session)
+
     @reactive.effect
     @reactive.event(input.select_all_disasters)
-    def select_all_disasters():
-        ui.update_checkbox_group(
-            id="disaster_type", 
-            selected=DISASTER_TYPES,
-            session=session
-        )
+    def _(): ui.update_checkbox_group("disaster_type", selected=DISASTER_TYPES, session=session)
+
     @reactive.effect
     @reactive.event(input.deselect_all_disasters)
-    def deselect_all_disasters():
-        ui.update_checkbox_group(
-            id="disaster_type",
-            selected=[],
-            session=session
-        )
+    def _(): ui.update_checkbox_group("disaster_type", selected=[],           session=session)
+
     @reactive.effect
     @reactive.event(input.reset_button)
-    def reset_filters():
-        ui.update_checkbox_group(
-            id="countries", 
-            selected=COUNTRIES,
-            session=session
-        )
-        ui.update_checkbox_group(
-            id="disaster_type",
-            selected=DISASTER_TYPES, 
-            session=session
-        )
-        ui.update_select(
-            id="summary_stat", 
-            selected="sum",
-            session=session
-        )
-        ui.update_date_range(
-            id="date_range",
-            start="2018-01-01",
-            end="2024-12-31",
-            session=session
-        )
-    # Active Summary of Filter Selection
+    def _():
+        ui.update_checkbox_group("countries",     selected=COUNTRIES,      session=session)
+        ui.update_checkbox_group("disaster_type", selected=DISASTER_TYPES, session=session)
+        ui.update_select("summary_stat",          selected="sum",          session=session)
+        ui.update_date_range("date_range", start="2018-01-01", end="2024-12-31", session=session)
+
+    # ── Active filter banner ───────────────────────────────────────────────────
     @render.ui
     def active_filters():
         countries = input.countries()
         disasters = input.disaster_type()
         start, end = input.date_range()
 
-        # Countries formatting 
-        if len(countries) == 0:
-            country_text = "None"
-        elif len(countries) == len(COUNTRIES):
-            country_text = "All Countries"
-        elif len(countries) <= 4:
-            country_text = ", ".join(countries)
-        else:
-            country_text = ", ".join(countries[:3]) + f" +{len(countries)-3} more"
-        # Disasters formatting 
-        if len(disasters) == 0:
-            disaster_text = "None"
-        elif len(disasters) == len(DISASTER_TYPES):
-            disaster_text = "All Types"
-        elif len(disasters) <= 4:
-            disaster_text = ", ".join(disasters)
-        else:
-            disaster_text = ", ".join(disasters[:3]) + f" +{len(disasters)-3} more"
+        def fmt_list(lst, full, full_label):
+            if len(lst) == 0:          return "None"
+            if len(lst) == len(full):  return full_label
+            if len(lst) <= 4:          return ", ".join(lst)
+            return ", ".join(lst[:3]) + f" +{len(lst)-3} more"
 
         return ui.div(
-            ui.span("Countries:", class_="fw-semibold me-1"),
-            ui.span(country_text, class_="badge bg-secondary-subtle text-dark me-3"),
-
-            ui.span("Disasters:", class_="fw-semibold me-1"),
-            ui.span(disaster_text, class_="badge bg-secondary-subtle text-dark me-3"),
-
-            ui.span("Dates:", class_="fw-semibold me-1"),
-            ui.span(f"{start} → {end}", class_="badge bg-secondary-subtle text-dark me-3"),
-
-            ui.span("Statistic:", class_="fw-semibold me-1"),
-            ui.span(SUMMARY_CHOICES[input.summary_stat()],
-                 class_="badge bg-secondary-subtle text-dark me-3")
+            ui.span("Countries:",  class_="fw-semibold me-1"),
+            ui.span(fmt_list(countries, COUNTRIES,     "All Countries"), class_="badge bg-secondary-subtle text-dark me-3"),
+            ui.span("Disasters:",  class_="fw-semibold me-1"),
+            ui.span(fmt_list(disasters, DISASTER_TYPES,"All Types"),     class_="badge bg-secondary-subtle text-dark me-3"),
+            ui.span("Dates:",      class_="fw-semibold me-1"),
+            ui.span(f"{start} → {end}",                                  class_="badge bg-secondary-subtle text-dark me-3"),
+            ui.span("Statistic:",  class_="fw-semibold me-1"),
+            ui.span(SUMMARY_CHOICES[input.summary_stat()],               class_="badge bg-secondary-subtle text-dark me-3"),
         )
-    # Filtered Dataframe 
+
+    # ── Reactive filtered dataframe ────────────────────────────────────────────
     @reactive.calc
     def filtered_df():
-        """
-        Return a filtered version of the disaster dataset based on
-        current user input selections.
-
-        Filters applied:
-        - Selected countries
-        - Selected disaster types
-        - Selected date range
-
-        This reactive dataset is used by:
-        - KPI calculations
-        - Bar chart aggregations
-        - Map visualizations
-
-        Returns
-        -------
-        pandas.DataFrame
-            Filtered disaster dataset.
-        """
-        filtered = df[
+        return df[
             (df["country"].isin(input.countries())) &
             (df["disaster_type"].isin(input.disaster_type())) &
             (df["date"] >= pd.to_datetime(input.date_range()[0])) &
             (df["date"] <= pd.to_datetime(input.date_range()[1]))
         ]
-        return filtered
-    # KPI Cards 
+
+    # ── KPI cards ──────────────────────────────────────────────────────────────
     @render.text
     def kpi_ratio():
-        """
-        Calculate the percentage of total economic loss covered by aid
-        for the currently filtered dataset.
-
-        Returns
-        -------
-        str
-            Percentage formatted to one decimal place.
-        """
         data = filtered_df()
         total_loss = data["economic_loss_usd"].sum()
-        total_aid = data['aid_amount_usd'].sum()
-
+        total_aid  = data["aid_amount_usd"].sum()
         if total_loss == 0:
-            return "0.0%"
-        
+            return "N/A"
         return f"{(total_aid / total_loss) * 100:.1f}%"
+
     @render.text
     def kpi_gap():
-        """
-        Calculate the Aid Gap for the filtered dataset.
-
-        Aid Gap = total economic loss − total aid received.
-
-        Returns
-        -------
-        str
-            Formatted currency string representing the gap.
-        """
         data = filtered_df()
-        total_loss = data["economic_loss_usd"].sum()
-        total_aid = data["aid_amount_usd"].sum()
-        gap = total_loss - total_aid
+        gap = data["economic_loss_usd"].sum() - data["aid_amount_usd"].sum()
         return format_currency(gap)
-    
-    def currency_formatter(x, pos):              # helper => pass into FuncFormatter
-        return format_currency(x)
 
-    @render.plot
+    # ── World Map (choropleth) ─────────────────────────────────────────────────
+    @render_widget
+    def map_plot():
+        data = filtered_df()
+
+        # Aggregate: count events + extra info per country
+        agg = (
+            data.groupby("country")
+            .agg(
+                disasters=("disaster_type", "count"),
+                casualties=("casualties", "sum"),
+                total_loss=("economic_loss_usd", "sum"),
+                total_aid=("aid_amount_usd", "sum"),
+            )
+            .reset_index()
+        )
+        agg["iso3"]      = agg["country"].map(ISO3)
+        agg["loss_fmt"]  = agg["total_loss"].apply(format_currency)
+        agg["aid_fmt"]   = agg["total_aid"].apply(format_currency)
+        agg["coverage"]  = (agg["total_aid"] / agg["total_loss"] * 100).round(1).astype(str) + "%"
+
+        fig = px.choropleth(
+            agg,
+            locations="iso3",
+            color="disasters",
+            hover_name="country",
+            hover_data={
+                "iso3":       False,
+                "disasters":  True,
+                "casualties": True,
+                "loss_fmt":   True,
+                "aid_fmt":    True,
+                "coverage":   True,
+            },
+            labels={
+                "disasters":  "# Disasters",
+                "casualties": "Casualties",
+                "loss_fmt":   "Economic Loss",
+                "aid_fmt":    "Aid Amount",
+                "coverage":   "Aid Coverage",
+            },
+            color_continuous_scale="cividis",
+            title="",
+        )
+
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=10, b=0),
+            coloraxis_colorbar=dict(
+                title="# Disasters",
+                thickness=12,
+                len=0.6,
+            ),
+            geo=dict(
+                showframe=False,
+                showcoastlines=True,
+                coastlinecolor="#444",
+                showland=True,
+                landcolor="#f0f0f0",
+                showocean=True,
+                oceancolor="#d6e8f5",
+                projection_type="natural earth",
+            ),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+        )
+        return fig
+
+    # ── Bar chart helper ───────────────────────────────────────────────────────
+    def _bar_chart(column: str, y_label: str, title_prefix: str):
+        data = filtered_df()
+        stat = input.summary_stat()
+        stat_label = SUMMARY_CHOICES[stat]
+
+        grouped = (
+            data.groupby("disaster_type")[column]
+            .agg(stat)
+            .reset_index()
+            .sort_values(column, ascending=False)
+        )
+        grouped["formatted"] = grouped[column].apply(format_currency)
+
+        # cividis discrete colours mapped to sorted values
+        n = len(grouped)
+        import plotly.colors as pc
+        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+
+        fig = go.Figure(
+            go.Bar(
+                x=grouped["disaster_type"],
+                y=grouped[column],
+                marker_color=palette,
+                customdata=grouped[["formatted"]],
+                hovertemplate=(
+                    "<b>%{x}</b><br>"
+                    f"{y_label}: %{{customdata[0]}}<br>"
+                    "<extra></extra>"
+                ),
+                text=grouped["formatted"],
+                textposition="outside",
+                textfont_size=10,
+            )
+        )
+
+        fig.update_layout(
+            title=dict(text=f"{title_prefix} ({stat_label})", font_size=13),
+            xaxis=dict(title="Disaster Type", tickangle=-35),
+            yaxis=dict(title=y_label, showgrid=True, gridcolor="#eee"),
+            margin=dict(l=60, r=20, t=45, b=80),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+        )
+        return fig
+
+    @render_widget
     def bar_loss():
-        """
-        Filter Data and plot bar chart for economic loss.
-        Returns
-        -------
-        fig
-            bar chart for econimic loss
-        """
-        data = filtered_df()
-        stat = input.summary_stat()
-        grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
+        return _bar_chart("economic_loss_usd", "Economic Loss (USD)", "Economic Loss by Disaster Type")
 
-        fig, ax = plt.subplots(figsize=(5, 3))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Loss (USD)")
-        ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-        return fig
-
-    @render.plot
+    @render_widget
     def bar_aid():
-        """
-        Filter Data and plot bar chart for economic aid.
-        Returns
-        -------
-        fig
-            bar chart for econimic aid
-        """
-        data = filtered_df()
-        stat = input.summary_stat()
-        grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
+        return _bar_chart("aid_amount_usd", "Aid Amount (USD)", "Aid Amount by Disaster Type")
 
-        fig, ax = plt.subplots(figsize=(5, 3))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Aid (USD)")
-        ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-        return fig
 
 app = App(app_ui, server)
