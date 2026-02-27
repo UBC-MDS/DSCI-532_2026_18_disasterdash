@@ -5,5 +5,6 @@ pandas
 polars
 narwhals
 shinywidgets
+plotly
 keplergl
 setuptools<81
