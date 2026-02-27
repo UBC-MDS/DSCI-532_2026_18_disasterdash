@@ -387,53 +387,47 @@ def server(input, output, session):
         gap = total_loss - total_aid
         return format_currency(gap)
 
-    @render.plot (alt="Economic Loss by Disaster Type", bbox_inches="tight")
+    @render.plot
     def bar_loss():
         """
-        Renders a bar chart plotting the economic loss with using matplotlib pyplot.
-
+        Filter Data and plot bar chart for economic loss.
         Returns
         -------
-        fig 
-            Bar chart
+        fig
+            bar chart for econimic loss
         """
         data = filtered_df()
         stat = input.summary_stat()
-        
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
-        
-        fig, ax = plt.subplots(figsize=(6,4))
-        ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Loss (USD)")
-        ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
-        ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()]) 
-        plt.subplots_adjust(bottom=0.25, left=0.15) 
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Loss (USD)")
+        ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: format_currency(x)))
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
         return fig
 
-    @render.plot (alt="Economic Aid by Disaster Type", bbox_inches="tight")
+    @render.plot
     def bar_aid():
         """
-        Renders a bar chart plotting the economic aid with using matplotlib pyplot.
-
+        Filter Data and plot bar chart for economic aid.
         Returns
         -------
-        fig 
-            Bar chart
+        fig
+            bar chart for econimic aid
         """
         data = filtered_df()
         stat = input.summary_stat()
-        
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
-        
+
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Economic Aid (USD)")
-        ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
-        ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()])  
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Aid (USD)")
+        ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: format_currency(x)))
         plt.xticks(rotation=45, ha="right")
-        plt.subplots_adjust(bottom=0.25, left=0.15) 
         plt.tight_layout()
         return fig
 
