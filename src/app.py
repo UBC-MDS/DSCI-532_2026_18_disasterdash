@@ -195,8 +195,8 @@ app_ui = ui.page_fillable(
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card(ui.output_plot("bar_loss", height="350px"), full_screen=True, height="400px"),
-            ui.card(ui.output_plot("bar_aid", height="350px"), full_screen=True, height="400px"),
+            ui.card(ui.output_plot("bar_loss", height="450px"), full_screen=True),
+            ui.card(ui.output_plot("bar_aid", height="450px"), full_screen=True),
             col_widths=[6, 6],
             style="height: 350px;"   
         ),
@@ -208,7 +208,7 @@ app_ui = ui.page_fillable(
         ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 2px 0; margin: 0; height: auto; display: block; flex-shrink: 0; flex-grow: 0;"    )
+        style="text-align: center; color: #888; font-size: 10;")
 )
 
 def server(input, output, session):
@@ -387,7 +387,7 @@ def server(input, output, session):
         gap = total_loss - total_aid
         return format_currency(gap)
     
-    def currency_formatter(x, pos):              # helper to pass into FuncFormatter
+    def currency_formatter(x, pos):              # helper => pass into FuncFormatter
         return format_currency(x)
 
     @render.plot
@@ -403,11 +403,12 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(6, 4.5))
         ax.barh(grouped.index, grouped.values)
         ax.set_xlabel("Economic Loss (USD)")         
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
         ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter)) 
+        plt.subplots_adjust(left=0.25)
         plt.tight_layout()                           
         return fig
 
@@ -424,11 +425,12 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(6, 4.5))
         ax.barh(grouped.index, grouped.values)
         ax.set_xlabel("Economic Aid (USD)")        
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
         ax.xaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))  
+        plt.subplots_adjust(left=0.25)
         plt.tight_layout()                          
         return fig
 
