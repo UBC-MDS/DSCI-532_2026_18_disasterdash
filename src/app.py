@@ -195,9 +195,10 @@ app_ui = ui.page_fillable(
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card(ui.output_plot("bar_loss"), full_screen=True),
-            ui.card(ui.output_plot("bar_aid"), full_screen=True),
+            ui.card(ui.output_plot("bar_loss", height="450px"), full_screen=True),
+            ui.card(ui.output_plot("bar_aid", height="450px"), full_screen=True),
             col_widths=[6, 6],
+            style="height: 450px;"   
         ),
         style="flex: 1 1 0; min-height: 0; overflow: hidden;"
     ),
@@ -207,7 +208,7 @@ app_ui = ui.page_fillable(
         ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        style="text-align: center; color: #888; font-size:7;")
+        style="text-align: center; color: #888; font-size: 8;")
 )
 
 def server(input, output, session):
@@ -402,7 +403,7 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(5, 3))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
@@ -424,7 +425,7 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(5, 3))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
