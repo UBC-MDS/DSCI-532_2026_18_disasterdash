@@ -105,6 +105,7 @@ app_ui = ui.page_fillable(
     
     ),
     ui.layout_sidebar(
+        style="flex: 1 1 0; min-height: 0; overflow: hidden;"
         ui.sidebar(
             # Input: User can Check/Uncheck countries
             ui.input_checkbox_group(
@@ -202,7 +203,7 @@ app_ui = ui.page_fillable(
         ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 2px 0; margin: 0;"
+        style="text-align: center; color: #888; font-size: 0.7rem; line-height: 1; padding: 0; margin: 0; height: 16px; min-height: 0; overflow: hidden; flex-shrink: 0;"
     )
 )
 
