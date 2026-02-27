@@ -105,7 +105,7 @@ app_ui = ui.page_fillable(
     
     ),
     ui.layout_sidebar(
-        style="flex: 1 1 0; min-height: 0; overflow: hidden;"
+        
         ui.sidebar(
             # Input: User can Check/Uncheck countries
             ui.input_checkbox_group(
@@ -196,6 +196,7 @@ app_ui = ui.page_fillable(
             ui.card(ui.output_plot("bar_aid"), full_screen=True),
             col_widths=[6, 6]
         ),
+        style="flex: 1 1 0; min-height: 0; overflow: hidden;"
     ),
     # Footer 
     ui.div(
