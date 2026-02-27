@@ -408,12 +408,11 @@ def server(input, output, session):
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
         
         fig, ax = plt.subplots()
-        ax.barh(grouped.index, grouped.values)
-        ax.set_xlabel("Aid Amount (USD)")
-        ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
-        ax.xaxis.set_major_formatter(
-            plt.FuncFormatter(lambda x, _: format_currency(x))
-        )
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Loss (USD)")
+        ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
+        ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()])  # <-- here
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
         return fig
 
