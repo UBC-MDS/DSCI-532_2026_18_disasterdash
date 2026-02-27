@@ -15,6 +15,7 @@ from shiny import App, ui, render, reactive
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 
 # Load Data
@@ -97,13 +98,16 @@ LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
 # Dashboard 
 app_ui = ui.page_fillable(
-    ui.panel_title("Disaster Dash"),
+    ui.panel_title(ui.h6("Disaster Dash", style="margin: 0; padding: 0;")),
     ui.div(
     ui.output_ui("active_filters"),
-    class_="mb-3",
+    class_="mb-1",
+    padding="5px",
+    gap="0px",
     
     ),
     ui.layout_sidebar(
+        
         ui.sidebar(
             # Input: User can Check/Uncheck countries
             ui.input_checkbox_group(
@@ -186,23 +190,25 @@ app_ui = ui.page_fillable(
                 col_widths=[12, 12],
                 row_heights=[1, 1]
             ),
-            col_widths=[9,3]
+            col_widths=[9,3],
+            style="height: 450px;"   
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card("Bar Chart of Economic Loss by Disaster Type ($)"),
-            ui.card("Bar Chart of Economic Aid by Disaster Type ($)"),
-            col_widths=[6, 6]
+            ui.card(ui.output_plot("bar_loss", height="450px"), full_screen=True),
+            ui.card(ui.output_plot("bar_aid", height="450px"), full_screen=True),
+            col_widths=[6, 6],
+            style="height: 450px;"   
         ),
+        style="flex: 1 1 0; min-height: 0; overflow: hidden;"
     ),
     # Footer 
     ui.div(
         ui.span("Global disaster impact & aid dashboard • "),
-        ui.span("Joel Nicholas Peterson, Ojasv Issar, Claire Saunders • "),
+        ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders • "),
         ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
         ui.span(f" • Updated {LAST_UPDATED}"),
-        class_="text-center text-muted small py-1"
-    )
+        style="text-align: center; color: #888; font-size: 8;")
 )
 
 def server(input, output, session):
@@ -380,6 +386,52 @@ def server(input, output, session):
         total_aid = data["aid_amount_usd"].sum()
         gap = total_loss - total_aid
         return format_currency(gap)
+    
+    def currency_formatter(x, pos):              # helper => pass into FuncFormatter
+        return format_currency(x)
 
+    @render.plot
+    def bar_loss():
+        """
+        Filter Data and plot bar chart for economic loss.
+        Returns
+        -------
+        fig
+            bar chart for econimic loss
+        """
+        data = filtered_df()
+        stat = input.summary_stat()
+        grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
+
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Loss (USD)")
+        ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        return fig
+
+    @render.plot
+    def bar_aid():
+        """
+        Filter Data and plot bar chart for economic aid.
+        Returns
+        -------
+        fig
+            bar chart for econimic aid
+        """
+        data = filtered_df()
+        stat = input.summary_stat()
+        grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
+
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.bar(grouped.index, grouped.values)
+        ax.set_ylabel("Economic Aid (USD)")
+        ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(currency_formatter))
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        return fig
 
 app = App(app_ui, server)
