@@ -195,8 +195,8 @@ app_ui = ui.page_fillable(
         ),
         ui.layout_columns(
             # Bar Charts 
-            ui.card(ui.output_plot("bar_loss"), full_screen=True),
-            ui.card(ui.output_plot("bar_aid"), full_screen=True),
+            ui.card(ui.output_plot("bar_loss"), full_screen=True, height="400px"),
+            ui.card(ui.output_plot("bar_aid"), full_screen=True, height="400px"),
             col_widths=[6, 6],
             style="height: 350px;"   
         ),
@@ -389,36 +389,52 @@ def server(input, output, session):
 
     @render.plot
     def bar_loss():
+        """
+        Renders a bar chart plotting the economic loss with using matplotlib pyplot.
+
+        Returns
+        -------
+        fig 
+            Bar chart
+        """
         data = filtered_df()
         stat = input.summary_stat()
         
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
         
-        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig, ax = plt.subplots(figsize=(6,4))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()]) 
         plt.subplots_adjust(bottom=0.25, left=0.15) 
         plt.xticks(rotation=45, ha="right")
-        plt.tight_layout(rect=[0, 0, 1, 1])
+        plt.tight_layout()
         return fig
 
     @render.plot
     def bar_aid():
+        """
+        Renders a bar chart plotting the economic aid with using matplotlib pyplot.
+
+        Returns
+        -------
+        fig 
+            Bar chart
+        """
         data = filtered_df()
         stat = input.summary_stat()
         
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
         
-        fig, ax = plt.subplots(figsize=(6, 3.5))
+        fig, ax = plt.subplots(figsize=(6, 4))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()])  
         plt.xticks(rotation=45, ha="right")
         plt.subplots_adjust(bottom=0.25, left=0.15) 
-        plt.tight_layout(rect=[0, 0, 1, 1])
+        plt.tight_layout()
         return fig
 
 app = App(app_ui, server)
