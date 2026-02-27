@@ -637,7 +637,7 @@ app_ui = ui.page_fillable(
                         ui.layout_columns(
                             ui.card(
                                 ui.card_header("🗺️  Disaster Map"),
-                                ui.output_ui("map_container"),
+                                output_widget("map_plot"),
                                 full_screen=True,
                             ),
                             ui.output_ui("kpi_grid"),
@@ -649,12 +649,12 @@ app_ui = ui.page_fillable(
                         ui.layout_columns(
                             ui.card(
                                 ui.card_header("📉  Economic Loss by Disaster Type"),
-                                ui.output_ui("bar_loss_container"),
+                                output_widget("bar_loss"),
                                 full_screen=True,
                             ),
                             ui.card(
                                 ui.card_header("💰  Aid Amount by Disaster Type"),
-                                ui.output_ui("bar_aid_container"),
+                                output_widget("bar_aid"),
                                 full_screen=True,
                             ),
                             col_widths=[6, 6],
@@ -768,6 +768,25 @@ def server(input, output, session):
             </div>
         ''')
 
+
+    def _empty_fig(msg="No data to display", hint="Adjust your filters"):
+        fig = go.Figure()
+        fig.add_annotation(
+            text=f"<b>{msg}</b><br><span style='font-size:11px'>{hint}</span>",
+            xref="paper", yref="paper", x=0.5, y=0.5,
+            showarrow=False,
+            font=dict(size=13, color="#94a3b8", family="Instrument Sans"),
+            align="center",
+        )
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+        )
+        return fig
+
     # ── KPI Grid ──────────────────────────────────────────────────────────────
     @render.ui
     def kpi_grid():
@@ -798,19 +817,13 @@ def server(input, output, session):
         )
 
     # ── Map ───────────────────────────────────────────────────────────────────
-    @render.ui
-    def map_container():
-        if filtered_df().empty:
-            return empty_state("🗺️", "No data to display", "Adjust your filters to see disaster locations")
-        return output_widget("map_plot")
-
     @render_widget
     def map_plot():
         data   = filtered_df()
         metric = input.map_metric()
 
         if data.empty:
-            return go.Figure().update_layout(margin=dict(l=0, r=0, t=0, b=0))
+            return _empty_fig("No data to display", "Adjust your filters to see disaster locations")
 
         agg = (
             data.groupby("country")
@@ -892,11 +905,7 @@ def server(input, output, session):
     def _make_bar(column, y_label):
         data = filtered_df()
         if data.empty:
-            return go.Figure().update_layout(
-                margin=dict(l=60, r=20, t=20, b=60),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-            )
+            return _empty_fig("No data to display", "Select countries and disaster types to view")
 
         stat     = input.summary_stat()
         stat_lbl = SUMMARY_CHOICES[stat]
@@ -948,21 +957,9 @@ def server(input, output, session):
         )
         return fig
 
-    @render.ui
-    def bar_loss_container():
-        if filtered_df().empty:
-            return empty_state("📉", "No economic loss data", "Select countries and disaster types to view")
-        return output_widget("bar_loss")
-
     @render_widget
     def bar_loss():
         return _make_bar("economic_loss_usd", "Economic Loss (USD)")
-
-    @render.ui
-    def bar_aid_container():
-        if filtered_df().empty:
-            return empty_state("💰", "No aid data available", "Select countries and disaster types to view")
-        return output_widget("bar_aid")
 
     @render_widget
     def bar_aid():
