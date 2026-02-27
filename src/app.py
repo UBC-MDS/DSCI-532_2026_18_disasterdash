@@ -403,8 +403,8 @@ def server(input, output, session):
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
         
         fig, ax = plt.subplots(figsize=(6,4))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Loss (USD)")
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()]) 
         plt.subplots_adjust(bottom=0.25, left=0.15) 
@@ -428,8 +428,8 @@ def server(input, output, session):
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
         
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar(grouped.index, grouped.values)
-        ax.set_ylabel("Economic Aid (USD)")
+        ax.barh(grouped.index, grouped.values)
+        ax.set_xlabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({stat.capitalize()})")
         ax.set_yticklabels([format_currency(v) for v in ax.get_yticks()])  
         plt.xticks(rotation=45, ha="right")
