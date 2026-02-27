@@ -403,7 +403,7 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["economic_loss_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(5, 3))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Loss (USD)")
         ax.set_title(f"Economic Loss by Disaster Type ({SUMMARY_CHOICES[stat]})")
@@ -425,7 +425,7 @@ def server(input, output, session):
         stat = input.summary_stat()
         grouped = data.groupby("disaster_type")["aid_amount_usd"].agg(stat).sort_values()
 
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(5, 3))
         ax.bar(grouped.index, grouped.values)
         ax.set_ylabel("Economic Aid (USD)")
         ax.set_title(f"Economic Aid by Disaster Type ({SUMMARY_CHOICES[stat]})")
