@@ -1,4 +1,8 @@
-# Disaster Dash
+<p align="center">
+<img width="894" height="77" alt="DASH" src="https://github.com/user-attachments/assets/f17f67b4-3ce2-4588-b95e-7ea74aa049ab" />
+<br><br>
+<img src="https://github.com/user-attachments/assets/8bf34fc7-8ff1-417c-b6de-e034403306ed" width="600" height="400" />
+</p>
 
 ## About
 
