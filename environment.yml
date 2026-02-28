@@ -4,9 +4,13 @@ channels:
   - defaults
 dependencies:
   - python=3.11
-  - shiny
   - pandas
+  - shiny
+  - plotly
+  - shinywidgets
   - jupyter
   - matplotlib
   - seaborn
-  - plotly
+  - pip
+  - pip:
+      - anywidget
