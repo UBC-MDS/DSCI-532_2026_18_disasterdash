@@ -38,6 +38,7 @@ flowchart TD
     B[/date_range/] --> F
     C[/disaster_type/] --> F
     D[/map_metric/] --> Map
+    D --> Strip
     E[/summary_stat/] --> BarLoss
     E --> BarAid
 
