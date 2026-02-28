@@ -44,6 +44,7 @@
 - Data is limited to only countries surveyed.
 - Data only goes up to 2024.
 - Some subsets may produce stable KPI ratios due to proportional aid-loss relationship.
+- Demo GIF performs demo on posit cloud build with some lag and lower resolution from browser recording
 
 
 ## Reflection:
@@ -61,3 +62,4 @@ At this stage, the dashboard successfully demonstrates full reactivity and deplo
 ## Future Upgrades: 
 
 - Potential user choice for charting color themes.
+- Demo run locally with higher quality screen recording software
