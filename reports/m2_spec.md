@@ -41,6 +41,7 @@ flowchart TD
     D --> Strip
     E[/summary_stat/] --> BarLoss
     E --> BarAid
+    E --> Strip
 
     F --> Map([map_plot: Choropleth])
     F --> KPI([kpi_grid: Aid Coverage & Funding Gap])
@@ -69,3 +70,19 @@ flowchart TD
 ### Map Aggregation (inline)
 - **Depends on:** `filtered_df`, `map_metric`
 - **Transformation:** Groups by `country`, computes disaster count, total casualties, total economic loss, total aid, average severity, average response time, and aid coverage %. The selected `map_metric` controls which variable drives the choropleth colour scale.
+
+
+## Complexity Enhancement
+
+### Reset All Filters Button
+
+To improve usability and demonstrate event-driven reactivity, we implemented a **Reset All Filters** button that restores every global input to its default state.
+
+This feature uses `@reactive.event()` in combination with `@reactive.effect()` to programmatically update all filter widgets when the reset button is clicked.
+
+### Why This Enhances the Dashboard
+
+* Allows users to quickly recover from overly restrictive filter combinations
+* Prevents “empty state” traps during exploratory analysis
+* Improves workflow efficiency when comparing multiple scenarios
+* Demonstrates correct event-based reactive architecture

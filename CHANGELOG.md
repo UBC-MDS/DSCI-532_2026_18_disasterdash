@@ -16,6 +16,7 @@
 - Added active filter strip banner displaying current filter state at a glance.
 - Added "None" deselect buttons alongside existing "All" buttons for country and disaster type filters.
 - Added empty state placeholders across all chart panels when no data matches the current filters.
+- Implemented optional complexity enhancement: Reset All Filters button using `@reactive.event` and `@reactive.effect` to programmatically restore all inputs to default values.
 
 
 ## Changed:
@@ -50,10 +51,11 @@
 
 - Job Stories 1–4 are fully implemented (global filtering, reactive summaries, bar charts with configurable statistics, and KPI cards).
 - Map and bar chart components are implemented as prototype versions and will be refined in M3.
-- Layout evolved from original M1 sketch to improve information hierarchy and align with dashboard best practices.
+- Layout evolved from the original M1 sketch to a single-page overview design with a dominant choropleth map, two KPI cards (Aid Coverage % and Funding Gap), and horizontally oriented bar charts for improved readability and clearer emphasis on aid gaps.
 - Reactive architecture follows Lecture 3 guidance: a central `filtered_df` reactive calc feeds multiple outputs, with bar chart aggregation applied inline per chart.
 - Strength: Strong reactive separation and modular structure.
 - Limitation: Visual polish and advanced interactivity deferred to M3.
+- Implemented the optional complexity enhancement (Reset All Filters button) to improve workflow and demonstrate event-based reactivity.
 
 At this stage, the dashboard successfully demonstrates full reactivity and deployment workflow, though additional visual refinement and deeper interactivity are planned for M3. Overall, the milestone strengthened our understanding of reactive design patterns and deployment structure.
 
