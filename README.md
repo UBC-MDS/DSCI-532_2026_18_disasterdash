@@ -1,6 +1,7 @@
 
 <img width="894" height="77" alt="DASH" src="https://github.com/user-attachments/assets/f17f67b4-3ce2-4588-b95e-7ea74aa049ab" />
-![screen-capture](https://github.com/user-attachments/assets/43096041-f2b5-496a-a892-9cec7eb79ac9)
+
+![screen-capture](https://github.com/user-attachments/assets/8bf34fc7-8ff1-417c-b6de-e034403306ed)
 
 ## About
 
