@@ -73,15 +73,28 @@ MAP_METRICS = {
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
 # ── QueryChat Config ───────────────────────────────────────────────────────────
-# querychat.init() takes a create_chat_callback function.
-# That function receives the auto-generated system_prompt (with schema info)
-# and must return a chatlas Chat object.
-# ANTHROPIC_API_KEY must be set as an environment variable.
+# Uses Groq API with meta-llama/llama-4-maverick-17b-128e-instruct
+# (Llama 4 Maverick — fast, free tier, reliable tool/function calling).
+# Prerequisites:
+#   Add to your .env file:  GROQ_API_KEY=your_key_here
+
+import chatlas, os as _os, sys as _sys
+
+_groq_key = _os.getenv("GROQ_API_KEY")
+if not _groq_key:
+    print(
+        "\n❌  GROQ_API_KEY is not set.\n"
+        "   1. Get a free key at https://console.groq.com/keys\n"
+        "   2. Add to .env:  GROQ_API_KEY=your_key_here\n"
+        "   3. Re-run:       shiny run src/app.py\n",
+        file=_sys.stderr,
+    )
+    _sys.exit(1)
 
 qc = QueryChat(
     df,
     "global_disaster_response_2018_2024",
-    client="anthropic/claude-haiku-4-5-20251001",
+    client=chatlas.ChatGroq(model="meta-llama/llama-4-maverick-17b-128e-instruct", api_key=_groq_key),
     greeting="""Hi! I'm your **Disaster Dash AI assistant** 🌍
 
 Ask me natural language questions to filter the disaster dataset. Try:
