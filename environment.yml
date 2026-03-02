@@ -14,3 +14,6 @@ dependencies:
   - pip
   - pip:
       - anywidget
+      - querychat
+      - anthropic
+      - python-dotenv
