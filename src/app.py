@@ -14,10 +14,11 @@ import plotly.colors as pc
 from querychat import QueryChat
 import io
 
-# Load .env if present (optional)
+# Load .env from project root (parent of src/)
+# override=True ensures python-dotenv's quote-stripped value beats VS Code's raw injection
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 except ImportError:
     pass
 
@@ -949,7 +950,7 @@ def server(input, output, session):
                 "cov_fmt":   "Coverage",  "sev_fmt": "Avg Severity",
                 "resp_fmt":  "Avg Response",
             },
-            color_continuous_scale="cividis",
+            color_continuous_scale="viridis",
         )
         fig.update_geos(
             projection_type="natural earth",
@@ -998,7 +999,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("viridis", [i / max(n - 1, 1) for i in range(n)])
 
         fig = go.Figure(go.Bar(
             y=grp["disaster_type"],
