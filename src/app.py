@@ -38,7 +38,28 @@ ISO3 = {
     "Philippines": "PHL", "South Africa": "ZAF", "Spain": "ESP",
     "Turkey": "TUR",    "United States": "USA",
 }
-
+# ── GDP (Current USD, 2024 World Bank) ─────────────────────────────
+GDP = {
+    "Australia": 1757022451652.83,
+    "Bangladesh": 450119432068.852,
+    "Brazil": 2185821648943.86,
+    "Canada": 2243636826633.76,
+    "Chile": 330267137371.592,
+    "China": 18743803170827.2,
+    "Germany": 4685592577804.69,
+    "Spain": 1725671652742.19,
+    "France": 3160442622465.08,
+    "Greece": 256238371778.118,
+    "Indonesia": 1396300098190.97,
+    "India": 3909891533858.08,
+    "Italy": 2380825077243.59,
+    "Japan": 4027597523550.58,
+    "Mexico": 1856365616165.94,
+    "Nigeria": 252261880141.151,
+    "Philippines": 461617509782.355,
+    "United States": 28750956130731.2,
+    "South Africa": 401144998373.585,
+}
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def fmt_currency(v):
     s = "-" if v < 0 else ""
