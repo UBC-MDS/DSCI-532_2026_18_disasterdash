@@ -64,5 +64,4 @@ At this stage, the dashboard successfully demonstrates full reactivity and deplo
 ## Future Upgrades: 
 
 - Potential user choice for charting color themes.
-- Addition of more AI filtering elements
 - Demo run locally with higher quality screen recording software
