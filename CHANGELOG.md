@@ -1,5 +1,23 @@
 # CHANGELOG 
 
+## [0.3.0] - 2026-03-08
+
+## Added:
+
+
+## Changed:
+- Updated default country selection to Brazil, Bangladesh, and South Africa, representing the three countries with the highest total funding gaps across the full dataset (2018–2024). This provides a clearer comparative baseline when the dashboard first loads and better highlights cross-regional aid shortfalls.
+
+
+## Fixed:
+
+## Known Issues:
+
+## Reflection:
+
+## Future Upgrades 
+
+
 ## [0.2.0] - 2026-02-28
 
 
