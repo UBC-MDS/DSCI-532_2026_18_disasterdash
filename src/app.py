@@ -910,15 +910,31 @@ def server(input, output, session):
             },
             color_continuous_scale="cividis",
         )
+        # ── Auto zoom to selected countries ──
         fig.update_geos(
             projection_type="natural earth",
+            fitbounds="locations",   # 🔥 this enables auto zoom
             showframe=False,
-            showcoastlines=True,  coastlinecolor="#94a3b8",
-            showland=True,        landcolor="#e8edf4",
-            showocean=True,       oceancolor="#d4e5f7",
-            showlakes=True,       lakecolor="#d4e5f7",
-            showcountries=True,   countrycolor="#94a3b8",
-            lataxis_range=[-58, 80], lonaxis_range=[-170, 180],
+
+            # Borders
+            showcountries=True,
+            countrycolor="#64748b",
+            countrywidth=0.8,
+
+            showcoastlines=True,
+            coastlinecolor="#64748b",
+            coastlinewidth=0.6,
+
+            # Land & water
+            showland=True,
+            landcolor="#e8edf4",
+
+            showocean=True,
+            oceancolor="#dbeafe",
+
+            showlakes=True,
+            lakecolor="#dbeafe",
+
             bgcolor="rgba(0,0,0,0)",
         )
         fig.update_traces(marker_line_color="#94a3b8", marker_line_width=0.5)
