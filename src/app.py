@@ -999,7 +999,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("viridis", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
 
         fig = go.Figure(go.Bar(
             y=grp["disaster_type"],
@@ -1039,7 +1039,7 @@ def server(input, output, session):
             ),
         )
         return fig
-
+    
     @render_widget
     def bar_loss():
         return _make_bar("economic_loss_usd", "Economic Loss (USD)")
