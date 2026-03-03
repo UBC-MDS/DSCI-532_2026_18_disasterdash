@@ -3,17 +3,17 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
-  - pandas
-  - shiny
-  - plotly
-  - shinywidgets
   - jupyter
   - matplotlib
-  - seaborn
+  - pandas
   - pip
+  - plotly
+  - python=3.11
+  - seaborn
+  - shiny
+  - shinywidgets
   - pip:
       - anywidget
-      - querychat
       - groq
       - python-dotenv
+      - querychat
