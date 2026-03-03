@@ -4,8 +4,13 @@
 
 ## Added:
 
+- Implemented a new AI-powered tab featuring a querychat interface for natural language filtering.
+- Added a reactive dataframe output displaying the AI-filtered dataset.
+- Added a data download button to export the AI-filtered dataframe.
+
 
 ## Changed:
+
 - Updated default country selection to Brazil, Bangladesh, and South Africa, representing the three countries with the highest total funding gaps across the full dataset (2018–2024). This provides a clearer comparative baseline when the dashboard first loads and better highlights cross-regional aid shortfalls.
 
 
