@@ -427,13 +427,13 @@ html, body, .bslib-page-fill {{
     line-height: 1;
 }}
 .kpi-value {{
-    font-family: 'Syne', sans-serif;
-    font-size: 1.7rem;
-    font-weight: 800;
-    color: {T_PRI};
-    letter-spacing: -0.5px;
+    font-family: inherit !important;
+    font-size: 2rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
     line-height: 1;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }}
 .kpi-title {{
     font-size: 0.62rem;
@@ -442,7 +442,6 @@ html, body, .bslib-page-fill {{
     letter-spacing: 1px;
     color: {T_SEC};
 }}
-
 /* ── TABS ── */
 .nav-underline {{
     border-bottom: 2px solid {BORDER} !important;
@@ -812,26 +811,48 @@ def server(input, output, session):
     def kpi_grid():
         data = filtered_df()
         if data.empty:
-            cov_val = "—"; gap_val = "—"
+            gap_dollar_val = "-"
+            gap_pct_val = "-"
         else:
-            loss    = data["economic_loss_usd"].sum()
-            aid     = data["aid_amount_usd"].sum()
-            cov     = (aid / loss * 100) if loss > 0 else 0.0
-            gap     = loss - aid
-            cov_val = f"{cov:.1f}%"
-            gap_val = fmt_currency(gap)
+            # Total Funding Gap
+            total_loss    = data["economic_loss_usd"].sum()
+            total_aid     = data["aid_amount_usd"].sum()
+            total_gap     = total_loss - total_aid
+            gap_dollar_val = fmt_currency(total_gap)
+            # GDP Normalized Median Gap (%)
+            agg = (
+                data.groupby("country").agg(
+                    loss=("economic_loss_usd", "sum"),
+                    aid=("aid_amount_usd", "sum")
+                ).reset_index()
+            )
+            agg["gap"] = agg["loss"] - agg["aid"]
+            agg["gdp"] = agg["country"].map(GDP)
 
-        def kpi_box(cls, icon, value, title):
+            if agg.empty:
+                gap_pct_val="-"
+            else:
+                agg["gap_pct_gdp"] = (agg["gap"]/agg["gdp"])*100
+                median_gap_pct = agg["gap_pct_gdp"].median()
+                gap_pct_val = f"{median_gap_pct:.2f}%"
+
+        def kpi_box(cls, value, title, subtitle=None):
             return ui.div(
-                ui.div(icon, class_="kpi-icon"),
                 ui.div(value, class_="kpi-value"),
                 ui.div(title, class_="kpi-title"),
+                ui.div(subtitle, class_="kpi-subtitle") if subtitle else None,
                 class_=f"kpi-box {cls}",
             )
 
         return ui.div(
-            kpi_box("kpi-coverage", "🛡️", cov_val, "Aid Coverage"),
-            kpi_box("kpi-gap",      "⚠️", gap_val, "Funding Gap"),
+            kpi_box("kpi-gap",
+                     gap_dollar_val, 
+                     "Total Funding Gap", 
+                     "Total Loss - Total Aid"),
+            kpi_box("kpi-coverage", 
+                    gap_pct_val, 
+                    "Median Gap (% of GDP)",
+                    "Typical country shortfall relative to its economy"),
             class_="kpi-grid",
             style="height:100%;",
         )
