@@ -558,7 +558,7 @@ app_ui = ui.page_fillable(
                 ui.input_selectize(
                     "countries", label=None,
                     choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
-                    selected=COUNTRIES, multiple=True,
+                    selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
                     options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
                 ),
                 ui.div(
@@ -669,7 +669,7 @@ app_ui = ui.page_fillable(
 
             # Footer
             ui.div(
-                ui.span("Disaster Dash v2  ·  "),
+                ui.span("Disaster Dash v3  ·  "),
                 ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  ·  "),
                 ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
                 ui.span(f"  ·  Data through {LAST_UPDATED}"),
@@ -713,7 +713,7 @@ def server(input, output, session):
     @reactive.effect
     @reactive.event(input.reset_button)
     def _reset():
-        ui.update_selectize("countries",     selected=COUNTRIES,      session=session)
+        ui.update_selectize("countries",     selected=["Brazil", "Bangladesh", "South Africa"],      session=session)
         ui.update_selectize("disaster_type", selected=DISASTER_TYPES, session=session)
         ui.update_select("summary_stat",     selected="sum",          session=session)
         ui.update_select("map_metric",       selected="disasters",    session=session)
