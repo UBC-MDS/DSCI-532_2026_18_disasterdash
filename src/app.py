@@ -655,7 +655,7 @@ app_ui = ui.page_fillable(
                         # Row 1: Map + 4 KPIs
                         ui.layout_columns(
                             ui.card(
-                                ui.card_header("🗺️  Disaster Map"),
+                                ui.card_header(ui.output_ui("map_title")),
                                 output_widget("map_plot"),
                                 full_screen=True,
                             ),
@@ -858,6 +858,23 @@ def server(input, output, session):
         )
 
     # ── Map ───────────────────────────────────────────────────────────────────
+    @render.ui
+    def map_title():
+        metric = input.map_metric()
+
+        if metric == "disasters":
+            text = "Where Are Disasters Most Frequent?"
+
+        elif metric == "coverage_pct":
+            text = "How Much of Disaster Loss Is Covered by Aid?"
+
+        elif metric == "casualties":
+            text = "Where Are Disaster Casualties Highest?"
+
+        elif metric == "total_loss":
+            text = "Where Are Economic Losses Largest?"
+
+        return ui.span(text)
     @render_widget
     def map_plot():
         data   = filtered_df()
