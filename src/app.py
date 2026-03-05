@@ -290,7 +290,7 @@ html, body, .bslib-page-fill {{
 #reset_button {{
     display: block;
     width: calc(100% - 28px);
-    margin: 18px 14px 14px !important;
+    margin: 10px 14px 14px !important;
     background: #fff5f5 !important;
     color: {RED} !important;
     border: 1px solid #fee2e2 !important;
@@ -664,7 +664,7 @@ app_ui = ui.page_fillable(
 
             # Footer
             ui.div(
-                ui.span("Disaster Dash (v3  ·  "),
+                ui.span("Disaster Dash (v3)  ·  "),
                 ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  ·  "),
                 ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
                 ui.span(f"  ·  Data through {LAST_UPDATED}"),
@@ -735,7 +735,7 @@ def server(input, output, session):
             lbl("Countries:"),  pill(fmt(countries, COUNTRIES, "All Countries")), sep(),
             lbl("Disasters:"),  pill(fmt(disasters, DISASTER_TYPES, "All Types")), sep(),
             lbl("Dates:"),      pill(f"{start} → {end}"), sep(),
-            lbl("Statistic:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
+            lbl("Bar Chart Stat:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
             lbl("Map Metric:"), pill(MAP_METRICS[input.map_metric()]),
         )
 
