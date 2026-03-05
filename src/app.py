@@ -568,17 +568,6 @@ app_ui = ui.page_fillable(
                 ),
                 class_="sb-section",
             ),
-
-            ui.div(
-                ui.div("Date Range", class_="sb-label"),
-                ui.input_date_range(
-                    "date_range", label=None,
-                    start="2018-01-01", end="2024-12-31",
-                    min="2018-01-01",   max="2024-12-31",
-                ),
-                class_="sb-section",
-            ),
-
             ui.div(
                 ui.div("Disaster Type", class_="sb-label"),
                 ui.input_selectize(
@@ -594,16 +583,15 @@ app_ui = ui.page_fillable(
                 ),
                 class_="sb-section",
             ),
-
             ui.div(
-                ui.div("Bar Chart Statistic", class_="sb-label"),
-                ui.input_select(
-                    "summary_stat", label=None,
-                    choices=SUMMARY_CHOICES, selected="sum",
+                ui.div("Date Range", class_="sb-label"),
+                ui.input_date_range(
+                    "date_range", label=None,
+                    start="2018-01-01", end="2024-12-31",
+                    min="2018-01-01",   max="2024-12-31",
                 ),
                 class_="sb-section",
             ),
-
             ui.div(
                 ui.div("Map Metric", class_="sb-label"),
                 ui.input_select(
@@ -612,7 +600,14 @@ app_ui = ui.page_fillable(
                 ),
                 class_="sb-section",
             ),
-
+            ui.div(
+                ui.div("Bar Chart Statistic", class_="sb-label"),
+                ui.input_select(
+                    "summary_stat", label=None,
+                    choices=SUMMARY_CHOICES, selected="sum",
+                ),
+                class_="sb-section",
+            ),
             ui.input_action_button("reset_button", "↺  Reset All Filters"),
 
             width=236,
