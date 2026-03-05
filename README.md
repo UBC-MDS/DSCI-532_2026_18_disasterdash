@@ -20,10 +20,6 @@ This dashboard is a group project for the Master of Data Science program at the 
 | Preview (dev) | [disasterdash-preview](https://clr-saunders-dsci-532-2026-18-disasterdash-preview.share.connect.posit.cloud)|
 
 
-## Demo
-
-![Demo](img/demo.gif)
-
 ## Running the Dashboard Locally
 
 1. Clone this repository
@@ -42,12 +38,37 @@ conda env create -f environment.yml
 conda activate disaster-dash
 ```
 
-4. Run the dashboard
+4. Configure environment variables
+
+The **AI Explorer** tab uses the Groq API to power natural-language queries.  
+To run the app locally, you must provide a Groq API key.
+
+- Create a free API key at:  
+  https://console.groq.com/keys
+
+- In the project root, create a `.env` file:
+
+```bash
+touch .env
+```
+
+- Add your API key to the file:
+
+```bash
+GROQ_API_KEY=your_key_here
+```
+
+The application automatically loads this key using `python-dotenv`.
+
+> **Note:** The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
+
+5. Run the dashboard
+
 ```bash
 shiny run src/app.py
 ```
 
-5. Open your browser to the URL shown in the terminal.
+6. Open your browser to the URL shown in the terminal.
 
 ## Contributing
 
