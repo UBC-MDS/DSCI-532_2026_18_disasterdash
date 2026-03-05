@@ -1,5 +1,52 @@
 # CHANGELOG 
 
+## [0.3.0] - 2026-03-08
+
+## Added:
+
+- Implemented a new **AI Explorer tab** featuring a QueryChat interface for natural-language filtering of the disaster dataset.
+- Added a reactive dataframe output displaying the AI-filtered dataset.
+- Added a data download button to export the AI-filtered dataframe.
+- Added CSV export functionality for AI-filtered query results.
+- Added GDP-normalized disaster burden metric using **World Bank 2024 GDP data**.
+- Added explanatory subtitles and formulas to KPI cards to clarify metric calculations.
+- Added support for `GROQ_API_KEY` environment variable to enable the AI QueryChat interface locally and in deployment environments.
+
+## Changed:
+
+- Replaced **Aid Coverage %** and **Funding Gap** KPI cards with:
+  - **Total Unfunded Disaster Losses**
+  - **Disaster Burden (% of GDP)**
+- Default setting for filters updated to be just the top three countries with the highest total economic losses from disasters for a clearer comparative story. 
+- Relabeled side panel option "Summary Statistic" to "Bar Chart Statistic" to clarify it only corresponds to the Bar Chart. Updated in the active filter panel as well. 
+- Reordered filters to be more logically clear for the user: Countries -> Disasters -> Dates -> Map Metric -> Bar Chart Summary
+- Changed the map colour scheme from cividis to viridis so that there is more visual difference across the continuous scale 
+
+## Fixed:
+
+- Removed decorative KPI icons that were not tied to meaningful analytical comparisons.
+- Updated KPI cards to improve interpretability based on instructor feedback.
+- Refined KPI typography and spacing to improve readability and visual hierarchy.
+
+## Known Issues:
+
+- Data is limited to only countries surveyed.
+- Data only goes up to 2024.
+- Demo GIF performs demo on posit cloud build with some lag and lower resolution from browser recording
+
+## Reflection:
+
+This milestone focused on integrating an AI-powered exploration interface and improving the interpretability of our key metrics. The new AI Explorer tab uses QueryChat to allow natural-language filtering of the dataset, reinforcing our understanding of reactive data flows and how to isolate multiple reactive pipelines within a single Shiny application.
+
+We also redesigned the KPI cards based on instructor feedback. Replacing Aid Coverage % and Funding Gap with Total Unfunded Disaster Losses and Disaster Burden (% of GDP) provides clearer context about both the absolute funding gap and the relative economic impact of disasters.
+
+Finally, integrating the AI assistant required managing environment variables for the GROQ API key, highlighting the importance of handling external service dependencies securely across local and deployed environments.
+
+## Future Upgrades 
+
+- Demo run locally with higher quality screen recording software
+
+
 ## [0.2.0] - 2026-02-28
 
 
