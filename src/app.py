@@ -396,30 +396,23 @@ html, body, .bslib-page-fill {{
     border-radius: 14px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     padding: 18px 16px 14px;
+
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+
+    justify-content: space-evenly;   /* ⭐ the trick */
+
     text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s, box-shadow 0.15s;
+}}
+.kpi-subtitle {{
+    font-size: 0.8rem;
+    color: #475569;
 }}
 .kpi-box:hover {{
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.1) !important;
 }}
-.kpi-box::before {{
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 14px 14px 0 0;
-}}
-.kpi-events::before   {{ background: linear-gradient(90deg, {BLUE}, #60a5fa); }}
-.kpi-cas::before      {{ background: linear-gradient(90deg, {RED}, #f87171); }}
-.kpi-coverage::before {{ background: linear-gradient(90deg, {GREEN}, #34d399); }}
-.kpi-gap::before      {{ background: linear-gradient(90deg, {AMBER}, #fcd34d); }}
 
 .kpi-icon {{
     font-size: 1.4rem;
@@ -428,20 +421,26 @@ html, body, .bslib-page-fill {{
 }}
 .kpi-value {{
     font-family: inherit !important;
-    font-size: 2rem;
-    font-weight: 600;
+    font-size: 2.1rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
     line-height: 1;
-    margin-bottom: 6px;
+    margin: 6px 0 4px 0;
 }}
 .kpi-title {{
-    font-size: 0.62rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: {T_SEC};
+    color: #64748b;
 }}
+.kpi-formula {{
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.3px;
+}}
+
 /* ── TABS ── */
 .nav-underline {{
     border-bottom: 2px solid {BORDER} !important;
@@ -836,23 +835,28 @@ def server(input, output, session):
                 median_gap_pct = agg["gap_pct_gdp"].median()
                 gap_pct_val = f"{median_gap_pct:.2f}%"
 
-        def kpi_box(cls, value, title, subtitle=None):
+        def kpi_box(cls, value, title, subtitle=None, formula=None):
             return ui.div(
-                ui.div(value, class_="kpi-value"),
                 ui.div(title, class_="kpi-title"),
+                ui.div(value, class_="kpi-value"),
                 ui.div(subtitle, class_="kpi-subtitle") if subtitle else None,
+                ui.div(formula, class_="kpi-formula") if formula else None,
                 class_=f"kpi-box {cls}",
             )
 
         return ui.div(
             kpi_box("kpi-gap",
                      gap_dollar_val, 
-                     "Total Funding Gap", 
-                     "Total Loss - Total Aid"),
+                     "Total Unfunded Disaster Losses", 
+                     "Disaster losses not covered by aid",
+                     "Loss - Aid", 
+                     ),
             kpi_box("kpi-coverage", 
                     gap_pct_val, 
-                    "Median Gap (% of GDP)",
-                    "Typical country shortfall relative to its economy"),
+                    "Disaster Burden (% of GDP)",
+                    "Typical funding gap relative to GDP", 
+                    "Median((Loss − Aid) ÷ GDP)", 
+                    ),
             class_="kpi-grid",
             style="height:100%;",
         )
