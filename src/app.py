@@ -1,5 +1,5 @@
 """
-Disaster Dash (v2) — Improved UI/UX & Functionality
+Disaster Dash (v3) — Improved Storytelling & AI Integration
 Global Disaster Impact & Humanitarian Aid (2018–2024)
 
 Features:
@@ -596,7 +596,7 @@ app_ui = ui.page_fillable(
             ),
 
             ui.div(
-                ui.div("Summary Statistic", class_="sb-label"),
+                ui.div("Bar Chart Statistic", class_="sb-label"),
                 ui.input_select(
                     "summary_stat", label=None,
                     choices=SUMMARY_CHOICES, selected="sum",
@@ -608,7 +608,7 @@ app_ui = ui.page_fillable(
                 ui.div("Map Metric", class_="sb-label"),
                 ui.input_select(
                     "map_metric", label=None,
-                    choices=MAP_METRICS, selected="disasters",
+                    choices=MAP_METRICS, selected="total_loss",
                 ),
                 class_="sb-section",
             ),
@@ -669,7 +669,7 @@ app_ui = ui.page_fillable(
 
             # Footer
             ui.div(
-                ui.span("Disaster Dash v3  ·  "),
+                ui.span("Disaster Dash (v3  ·  "),
                 ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  ·  "),
                 ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
                 ui.span(f"  ·  Data through {LAST_UPDATED}"),
@@ -716,7 +716,7 @@ def server(input, output, session):
         ui.update_selectize("countries",     selected=["Brazil", "Bangladesh", "South Africa"],      session=session)
         ui.update_selectize("disaster_type", selected=DISASTER_TYPES, session=session)
         ui.update_select("summary_stat",     selected="sum",          session=session)
-        ui.update_select("map_metric",       selected="disasters",    session=session)
+        ui.update_select("map_metric",       selected="total_loss",    session=session)
         ui.update_date_range("date_range", start="2018-01-01", end="2024-12-31", session=session)
 
     # ── Active filter strip ───────────────────────────────────────────────────
