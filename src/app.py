@@ -1,17 +1,6 @@
 """
-Disaster Dash (v2) — Improved UI/UX & Functionality
+Disaster Dash (v3) — AI Explorer Tab Added
 Global Disaster Impact & Humanitarian Aid (2018–2024)
-
-Features:
-  • Single-page Overview layout (map, KPI cards, bar charts)
-  • 2 KPI cards: Aid Coverage %, Funding Gap
-  • Choropleth map with switchable metric (frequency, coverage, casualties, loss)
-  • Horizontal bar charts: Economic Loss & Aid Amount by disaster type
-  • Configurable summary statistic (mean, sum, min, max) for bar charts
-  • Active filter strip banner
-  • Searchable multi-select inputs for country and disaster type
-  • Better typography (Syne + Instrument Sans)
-  • Accessible labels (visually hidden, not display:none)
 """
 
 from shiny import App, ui, render, reactive
@@ -22,6 +11,16 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.colors as pc
+from querychat import QueryChat
+import io
+
+# Load .env from project root (parent of src/)
+# override=True ensures python-dotenv's quote-stripped value beats VS Code's raw injection
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env", override=True)
+except ImportError:
+    pass
 
 # ── Load Data ──────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).resolve().parent.parent
@@ -67,12 +66,47 @@ SUMMARY_CHOICES = {
     "max":  "Maximum",
 }
 MAP_METRICS = {
-    "disasters":   "Disaster Frequency",
+    "disasters":    "Disaster Frequency",
     "coverage_pct": "Aid Coverage (%)",
-    "casualties":  "Total Casualties",
-    "total_loss":  "Economic Loss (USD)",
+    "casualties":   "Total Casualties",
+    "total_loss":   "Economic Loss (USD)",
 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
+
+# ── QueryChat Config ───────────────────────────────────────────────────────────
+# Uses Groq API with meta-llama/llama-4-maverick-17b-128e-instruct
+# (Llama 4 Maverick — fast, free tier, reliable tool/function calling).
+# Prerequisites:
+#   Add to your .env file:  GROQ_API_KEY=your_key_here
+
+import chatlas, os as _os, sys as _sys
+
+_groq_key = _os.getenv("GROQ_API_KEY")
+if not _groq_key:
+    print(
+        "\n❌  GROQ_API_KEY is not set.\n"
+        "   1. Get a free key at https://console.groq.com/keys\n"
+        "   2. Add to .env:  GROQ_API_KEY=your_key_here\n"
+        "   3. Re-run:       shiny run src/app.py\n",
+        file=_sys.stderr,
+    )
+    _sys.exit(1)
+
+qc = QueryChat(
+    df,
+    "global_disaster_response_2018_2024",
+    client=chatlas.ChatGroq(model="meta-llama/llama-4-maverick-17b-128e-instruct", api_key=_groq_key),
+    greeting="""Hi! I'm your **Disaster Dash AI assistant** 🌍
+
+Ask me natural language questions to filter the disaster dataset. Try:
+- *"Show me only floods in India after 2020"*
+- *"Which country had the highest economic loss?"*
+- *"Filter to events with over 1000 casualties"*
+- *"Show earthquakes and hurricanes from 2022"*
+
+The table and charts below update automatically with your results.
+""",
+)
 
 # ── Design Tokens ──────────────────────────────────────────────────────────────
 NAVY    = "#0b1f3a"
@@ -453,6 +487,29 @@ html, body, .bslib-page-fill {{
 }}
 .tab-content {{ padding-top: 14px !important; }}
 
+/* ── DOWNLOAD BUTTON ── */
+#download_ai_csv {{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: {BLUE} !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    font-family: 'Instrument Sans', sans-serif !important;
+    padding: 7px 14px !important;
+    margin: 10px 14px 8px !important;
+    transition: all 0.18s;
+    cursor: pointer;
+}}
+#download_ai_csv:hover {{
+    background: {NAVY} !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26,86,219,0.28);
+}}
+
 /* ── EMPTY STATE ── */
 .empty-state {{
     display: flex;
@@ -469,13 +526,6 @@ html, body, .bslib-page-fill {{
 .empty-state .es-icon {{ font-size: 2.6rem; opacity: 0.3; }}
 .empty-state .es-msg  {{ font-weight: 700; font-size: 0.9rem; color: {T_PRI}; }}
 .empty-state .es-hint {{ font-size: 0.75rem; color: {T_MUTED}; }}
-
-/* ── DATA TABLE ── */
-.dataframe-table-container {{ overflow-x: auto; }}
-.shiny-data-frame-output .data-table-container {{
-    font-family: 'Instrument Sans', sans-serif !important;
-    font-size: 0.78rem !important;
-}}
 
 /* ── MAIN AREA ── */
 .bslib-sidebar-layout > .main {{
@@ -624,7 +674,6 @@ app_ui = ui.page_fillable(
             # Active filter strip
             ui.div(ui.output_ui("filter_strip"), id="filter-strip"),
 
-            # Tabs
             ui.navset_underline(
 
                 # ── Tab 1: Overview ──────────────────────────────────────────
@@ -632,7 +681,7 @@ app_ui = ui.page_fillable(
                     "📊  Overview",
                     ui.div(
 
-                        # Row 1: Map + 4 KPIs
+                        # Row 1: Map + KPIs
                         ui.layout_columns(
                             ui.card(
                                 ui.card_header("🗺️  Disaster Map"),
@@ -664,12 +713,57 @@ app_ui = ui.page_fillable(
                     ),
                 ),
 
+                # ── Tab 2: AI Explorer ───────────────────────────────────────
+                ui.nav_panel(
+                    "🤖  AI Explorer",
+                    ui.div(
+
+                        # Row 1: Chat + Data Table
+                        ui.layout_columns(
+                            ui.card(
+                                ui.card_header("💬  Ask a Question About the Data"),
+                                qc.ui(id="chat"),
+                                full_screen=True,
+                            ),
+                            ui.card(
+                                ui.card_header("📋  Filtered Results"),
+                                ui.output_data_frame("ai_table"),
+                                ui.download_button(
+                                    "download_ai_csv",
+                                    "⬇  Download CSV",
+                                ),
+                                full_screen=True,
+                            ),
+                            col_widths=[5, 7],
+                            style="height:430px; gap:14px;",
+                        ),
+
+                        # Row 2: Two charts driven by AI-filtered data
+                        ui.layout_columns(
+                            ui.card(
+                                ui.card_header("📉  Economic Loss by Disaster Type (AI Filtered)"),
+                                output_widget("ai_bar_loss"),
+                                full_screen=True,
+                            ),
+                            ui.card(
+                                ui.card_header("💰  Aid Amount by Disaster Type (AI Filtered)"),
+                                output_widget("ai_bar_aid"),
+                                full_screen=True,
+                            ),
+                            col_widths=[6, 6],
+                            style="height:330px; gap:14px;",
+                        ),
+
+                        class_="main-inner",
+                    ),
+                ),
+
                 id="main_tabs",
             ),
 
             # Footer
             ui.div(
-                ui.span("Disaster Dash v2  ·  "),
+                ui.span("Disaster Dash v3  ·  "),
                 ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  ·  "),
                 ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
                 ui.span(f"  ·  Data through {LAST_UPDATED}"),
@@ -732,9 +826,9 @@ def server(input, output, session):
             if len(lst) <= 3:         return ", ".join(lst)
             return ", ".join(lst[:2]) + f" +{len(lst)-2} more"
 
-        lbl = lambda t: ui.span(t, class_="fp-label")
+        lbl  = lambda t: ui.span(t, class_="fp-label")
         pill = lambda t: ui.span(t, class_="fp-pill")
-        sep = lambda: ui.span("·", class_="fp-sep")
+        sep  = lambda: ui.span("·", class_="fp-sep")
 
         return ui.div(
             lbl("Countries:"),  pill(fmt(countries, COUNTRIES, "All Countries")), sep(),
@@ -744,7 +838,7 @@ def server(input, output, session):
             lbl("Map Metric:"), pill(MAP_METRICS[input.map_metric()]),
         )
 
-    # ── Filtered data ─────────────────────────────────────────────────────────
+    # ── Filtered data (Overview tab) ──────────────────────────────────────────
     @reactive.calc
     def filtered_df():
         countries = [c for c in input.countries()     if c != "_all_"]
@@ -757,17 +851,7 @@ def server(input, output, session):
         )
         return df[mask].copy()
 
-    # ── Empty state helper ────────────────────────────────────────────────────
-    def empty_state(icon, msg, hint=""):
-        return ui.HTML(f'''
-            <div class="empty-state">
-                <div class="es-icon">{icon}</div>
-                <div class="es-msg">{msg}</div>
-                {"" if not hint else f'<div class="es-hint">{hint}</div>'}
-            </div>
-        ''')
-
-
+    # ── Empty figure helper ───────────────────────────────────────────────────
     def _empty_fig(msg="No data to display", hint="Adjust your filters"):
         fig = go.Figure()
         fig.add_annotation(
@@ -815,7 +899,7 @@ def server(input, output, session):
             style="height:100%;",
         )
 
-    # ── Map ───────────────────────────────────────────────────────────────────
+    # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
         data   = filtered_df()
@@ -827,11 +911,11 @@ def server(input, output, session):
         agg = (
             data.groupby("country")
             .agg(
-                disasters=("disaster_type",      "count"),
-                casualties=("casualties",         "sum"),
-                total_loss=("economic_loss_usd",  "sum"),
-                total_aid=("aid_amount_usd",      "sum"),
-                avg_severity=("severity_index",   "mean"),
+                disasters=("disaster_type",         "count"),
+                casualties=("casualties",            "sum"),
+                total_loss=("economic_loss_usd",     "sum"),
+                total_aid=("aid_amount_usd",         "sum"),
+                avg_severity=("severity_index",      "mean"),
                 avg_response=("response_time_hours", "mean"),
             )
             .reset_index()
@@ -845,7 +929,7 @@ def server(input, output, session):
         agg["coverage_pct"] = (
             agg["total_aid"] / agg["total_loss"].replace(0, float("nan")) * 100
         ).round(1)
-        agg["cov_fmt"]      = agg["coverage_pct"].apply(
+        agg["cov_fmt"] = agg["coverage_pct"].apply(
             lambda x: f"{x:.1f}%" if pd.notna(x) else "N/A"
         )
 
@@ -866,7 +950,7 @@ def server(input, output, session):
                 "cov_fmt":   "Coverage",  "sev_fmt": "Avg Severity",
                 "resp_fmt":  "Avg Response",
             },
-            color_continuous_scale="cividis",
+            color_continuous_scale="viridis",
         )
         fig.update_geos(
             projection_type="natural earth",
@@ -900,7 +984,7 @@ def server(input, output, session):
         )
         return fig
 
-    # ── Bar chart helper ──────────────────────────────────────────────────────
+    # ── Overview Bar Chart Helper ─────────────────────────────────────────────
     def _make_bar(column, y_label):
         data = filtered_df()
         if data.empty:
@@ -911,11 +995,11 @@ def server(input, output, session):
         grp = (
             data.groupby("disaster_type")[column]
             .agg(stat).reset_index()
-            .sort_values(column, ascending=True)   # ascending for bottom-up readability
+            .sort_values(column, ascending=True)
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
 
         fig = go.Figure(go.Bar(
             y=grp["disaster_type"],
@@ -955,7 +1039,7 @@ def server(input, output, session):
             ),
         )
         return fig
-
+    
     @render_widget
     def bar_loss():
         return _make_bar("economic_loss_usd", "Economic Loss (USD)")
@@ -963,6 +1047,96 @@ def server(input, output, session):
     @render_widget
     def bar_aid():
         return _make_bar("aid_amount_usd", "Aid Amount (USD)")
+
+    # =========================================================================
+    # ── AI Explorer Tab ───────────────────────────────────────────────────────
+    # =========================================================================
+
+    # Wire up querychat server.
+    # Returns a dict: chat["df"]() → filtered dataframe, chat["sql"]() → SQL string
+    qc_vals = qc.server(id="chat")
+    
+    @reactive.calc
+    def ai_df():
+        return qc_vals.df()
+
+    # Filtered data table
+    @render.data_frame
+    def ai_table():
+        data = ai_df()
+        if data.empty:
+            return render.DataGrid(
+                pd.DataFrame({"message": ["No results — try a different query."]}),
+                filters=False,
+            )
+        return render.DataGrid(data.head(500), filters=True)
+
+    # CSV download
+    @render.download(filename="disaster_ai_filtered.csv")
+    def download_ai_csv():
+        data = ai_df()
+        with io.StringIO() as buf:
+            data.to_csv(buf, index=False)
+            yield buf.getvalue()
+
+    # AI bar chart helper (always uses sum; independent of Overview summary_stat)
+    def _make_ai_bar(column, y_label):
+        data = ai_df()
+        if data.empty:
+            return _empty_fig("No data yet", "Ask a question above to filter the dataset")
+        if "disaster_type" not in data.columns or data["disaster_type"].isna().all():
+            return _empty_fig("No disaster_type column", "Check your query")
+
+        grp = (
+            data.groupby("disaster_type")[column]
+            .sum().reset_index()
+            .sort_values(column, ascending=True)
+        )
+        grp["fmt"] = grp[column].apply(fmt_currency)
+        n = len(grp)
+        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+
+        fig = go.Figure(go.Bar(
+            y=grp["disaster_type"],
+            x=grp[column],
+            orientation="h",
+            marker=dict(color=palette, line=dict(width=0)),
+            customdata=grp[["fmt"]],
+            hovertemplate="<b>%{y}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
+            text=grp["fmt"],
+            textposition="outside",
+            textfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+        ))
+        fig.update_layout(
+            xaxis=dict(
+                title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
+                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+                gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
+            ),
+            yaxis=dict(
+                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+                showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
+                automargin=True,
+            ),
+            margin=dict(l=10, r=70, t=10, b=42),
+            height=274,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+            hoverlabel=dict(
+                bgcolor="#fff", font_color=T_PRI,
+                font_size=11, font_family="Instrument Sans", bordercolor=NAVY,
+            ),
+        )
+        return fig
+
+    @render_widget
+    def ai_bar_loss():
+        return _make_ai_bar("economic_loss_usd", "Economic Loss (USD)")
+
+    @render_widget
+    def ai_bar_aid():
+        return _make_ai_bar("aid_amount_usd", "Aid Amount (USD)")
 
 
 app = App(app_ui, server)
