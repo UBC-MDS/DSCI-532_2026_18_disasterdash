@@ -11,12 +11,13 @@
 - Added explanatory subtitles and formulas to KPI cards to clarify metric calculations.
 
 
-
 ## Changed:
 
 - Replaced **Aid Coverage %** and **Funding Gap** with:
    **Total Unfunded Disaster Losses**
    **Disaster Burden (% of GDP)**.
+- Flipped all bar charts vertically aligned with some scaling
+- Changed the bar chart color themes to the more moderate 'teal' 
 
 
 ## Fixed:
