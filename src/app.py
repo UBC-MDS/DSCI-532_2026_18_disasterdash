@@ -1064,7 +1064,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("plasma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("mako", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
@@ -1164,7 +1164,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n = len(grp)
-        palette = pc.sample_colorscale("plasma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("mako", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
