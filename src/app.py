@@ -186,11 +186,8 @@ html, body, .bslib-page-fill {{
 }}
 #page-header .logo {{
     width: 42px; height: 42px;
-    background: linear-gradient(135deg, {AMBER} 0%, #f97316 100%);
-    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem;
-    box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+    font-size: 1.8rem;
     flex-shrink: 0;
 }}
 #page-header h1 {{
