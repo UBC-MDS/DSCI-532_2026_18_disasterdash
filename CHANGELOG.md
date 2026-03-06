@@ -7,14 +7,23 @@
 - Implemented a new AI-powered tab featuring a querychat interface for natural language filtering.
 - Added a reactive dataframe output displaying the AI-filtered dataset.
 - Added a data download button to export the AI-filtered dataframe.
+- Added GDP-normalized disaster burden metric using **World Bank 2024 GDP data**.
+- Added explanatory subtitles and formulas to KPI cards to clarify metric calculations.
+
 
 
 ## Changed:
 
-- Updated default country selection to Brazil, Bangladesh, and South Africa, representing the three countries with the highest total funding gaps across the full dataset (2018–2024). This provides a clearer comparative baseline when the dashboard first loads and better highlights cross-regional aid shortfalls.
+- Replaced **Aid Coverage %** and **Funding Gap** with:
+   **Total Unfunded Disaster Losses**
+   **Disaster Burden (% of GDP)**.
 
 
 ## Fixed:
+
+- Removed decorative KPI icons that were not tied to meaningful analytical comparisons.
+- Updated KPI cards to improve interpretability based on instructor feedback.
+- Refined KPI typography and spacing to improve readability and visual hierarchy.
 
 ## Known Issues:
 
