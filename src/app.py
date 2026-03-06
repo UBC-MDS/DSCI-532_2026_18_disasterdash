@@ -1191,7 +1191,7 @@ def server(input, output, session):
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
                 automargin=True,
-                range=[-0.5, len(grp) - 0.5],  # prevents clipping regardless of value range
+                autorange=True,  # let Plotly calculate range naturally
             ),
             margin=dict(l=60, r=20, t=10, b=80),
             height=274,
