@@ -1064,7 +1064,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("plasma", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
@@ -1073,7 +1073,6 @@ def server(input, output, session):
             x=grp["disaster_type"],
             y=grp[column],
             orientation="v",
-            width=0.5,  # fixed bar width — no horizontal scaling
             marker=dict(color=palette, line=dict(width=0)),
             customdata=grp[["fmt"]],
             hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
@@ -1095,7 +1094,6 @@ def server(input, output, session):
             ),
             xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                tickangle=-35,  # angled labels like right chart
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
                 automargin=True,
             ),
@@ -1165,7 +1163,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n = len(grp)
-        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("plasma", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
