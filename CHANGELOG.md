@@ -17,7 +17,7 @@
 - Replaced **Aid Coverage %** and **Funding Gap** with:
    **Total Unfunded Disaster Losses**
    **Disaster Burden (% of GDP)**.
-
+- Changed the title header font style
 
 ## Fixed:
 
