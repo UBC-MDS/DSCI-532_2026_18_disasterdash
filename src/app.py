@@ -89,8 +89,14 @@ SUMMARY_CHOICES = {
 MAP_METRICS = {
     "disasters":    "Disaster Frequency",
     "coverage_pct": "Aid Coverage (%)",
-    "casualties":   "Total Casualties",
     "total_loss":   "Economic Loss (USD)",
+    "casualties":   "Total Casualties",
+}
+QUESTION_MAP = {
+    "total_loss": "Where are disasters causing the greatest economic losses?",
+    "coverage_pct": "Where are disaster losses least covered by aid?",
+    "disasters": "Where are disasters occurring most frequently?",
+    "casualties": "Where are disasters causing the greatest loss of life?",
 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
@@ -940,7 +946,9 @@ def server(input, output, session):
             class_="kpi-grid",
             style="height:100%;",
         )
-
+    @render.text
+    def map_title():
+        return QUESTION_MAP[input.map_metric()]
     # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
@@ -997,9 +1005,9 @@ def server(input, output, session):
         # ── Auto zoom to selected countries ──
         fig.update_geos(
             projection_type="natural earth",
-            fitbounds="locations",   # 🔥 this enables auto zoom
+            fitbounds="locations",
+            scope="world",   
             showframe=False,
-
             # Borders
             showcountries=True,
             countrycolor="#64748b",
@@ -1027,7 +1035,7 @@ def server(input, output, session):
             height=340,
             coloraxis_colorbar=dict(
                 title=dict(text=metric_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                orientation="v", x=1.01, xanchor="left", y=0.5, yanchor="middle",
+                orientation="v", x=1.02, xanchor="left", y=0.5, yanchor="middle",
                 thickness=11, len=0.55,
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 outlinewidth=0,
@@ -1038,7 +1046,7 @@ def server(input, output, session):
                 bgcolor="#fff", font_color=T_PRI, font_size=11,
                 font_family="Instrument Sans", bordercolor=NAVY,
             ),
-            geo=dict(domain=dict(x=[0, 0.93], y=[0, 1])),
+            geo=dict(domain=dict(x=[0, 0.96], y=[0, 1])),
         )
         return fig
 
