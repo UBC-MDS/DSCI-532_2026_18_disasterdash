@@ -351,7 +351,7 @@ html, body, .bslib-page-fill {{
 #reset_button {{
     display: block;
     width: calc(100% - 28px);
-    margin: 18px 14px 14px !important;
+    margin: 10px 14px 14px !important;
     background: #fff5f5 !important;
     color: {RED} !important;
     border: 1px solid #fee2e2 !important;
@@ -644,17 +644,6 @@ app_ui = ui.page_fillable(
                 ),
                 class_="sb-section",
             ),
-
-            ui.div(
-                ui.div("Date Range", class_="sb-label"),
-                ui.input_date_range(
-                    "date_range", label=None,
-                    start="2018-01-01", end="2024-12-31",
-                    min="2018-01-01",   max="2024-12-31",
-                ),
-                class_="sb-section",
-            ),
-
             ui.div(
                 ui.div("Disaster Type", class_="sb-label"),
                 ui.input_selectize(
@@ -670,25 +659,31 @@ app_ui = ui.page_fillable(
                 ),
                 class_="sb-section",
             ),
-
             ui.div(
-                ui.div("Summary Statistic", class_="sb-label"),
+                ui.div("Date Range", class_="sb-label"),
+                ui.input_date_range(
+                    "date_range", label=None,
+                    start="2018-01-01", end="2024-12-31",
+                    min="2018-01-01",   max="2024-12-31",
+                ),
+                class_="sb-section",
+            ),
+            ui.div(
+                ui.div("Map Metric", class_="sb-label"),
+                ui.input_select(
+                    "map_metric", label=None,
+                    choices=MAP_METRICS, selected="total_loss",
+                ),
+                class_="sb-section",
+            ),
+            ui.div(
+                ui.div("Bar Chart Statistic", class_="sb-label"),
                 ui.input_select(
                     "summary_stat", label=None,
                     choices=SUMMARY_CHOICES, selected="sum",
                 ),
                 class_="sb-section",
             ),
-
-            ui.div(
-                ui.div("Map Metric", class_="sb-label"),
-                ui.input_select(
-                    "map_metric", label=None,
-                    choices=MAP_METRICS, selected="disasters",
-                ),
-                class_="sb-section",
-            ),
-
             ui.input_action_button("reset_button", "↺  Reset All Filters"),
 
             width=236,
@@ -836,7 +831,7 @@ def server(input, output, session):
         ui.update_selectize("countries",     selected=["Brazil", "Bangladesh", "South Africa"],      session=session)
         ui.update_selectize("disaster_type", selected=DISASTER_TYPES, session=session)
         ui.update_select("summary_stat",     selected="sum",          session=session)
-        ui.update_select("map_metric",       selected="disasters",    session=session)
+        ui.update_select("map_metric",       selected="total_loss",    session=session)
         ui.update_date_range("date_range", start="2018-01-01", end="2024-12-31", session=session)
 
     # ── Active filter strip ───────────────────────────────────────────────────
@@ -860,7 +855,7 @@ def server(input, output, session):
             lbl("Countries:"),  pill(fmt(countries, COUNTRIES, "All Countries")), sep(),
             lbl("Disasters:"),  pill(fmt(disasters, DISASTER_TYPES, "All Types")), sep(),
             lbl("Dates:"),      pill(f"{start} → {end}"), sep(),
-            lbl("Statistic:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
+            lbl("Bar Chart Stat:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
             lbl("Map Metric:"), pill(MAP_METRICS[input.map_metric()]),
         )
 
