@@ -1060,13 +1060,12 @@ def server(input, output, session):
         grp = (
             data.groupby("disaster_type")[column]
             .agg(stat).reset_index()
-            .sort_values(column, ascending=False)  # descending for vertical
+            .sort_values(column, ascending=False)
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
         palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
 
-        # Dynamic y-axis range with 20% headroom for labels
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
 
@@ -1074,6 +1073,7 @@ def server(input, output, session):
             x=grp["disaster_type"],
             y=grp[column],
             orientation="v",
+            width=0.5,  # fixed bar width — no horizontal scaling
             marker=dict(color=palette, line=dict(width=0)),
             customdata=grp[["fmt"]],
             hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
@@ -1091,10 +1091,11 @@ def server(input, output, session):
                 title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
-                range=y_range,  # dynamic range
+                range=y_range,
             ),
             xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+                tickangle=-35,  # angled labels like right chart
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
                 automargin=True,
             ),
@@ -1164,7 +1165,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n = len(grp)
-        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
@@ -1173,7 +1174,7 @@ def server(input, output, session):
             x=grp["disaster_type"],
             y=grp[column],
             orientation="v",
-            marker=dict(color=palette, line=dict(width=0)),
+            marker=dict(color=palette, line=dict(width=0.5)),
             customdata=grp[["fmt"]],
             hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
             text=grp["fmt"],
@@ -1190,7 +1191,7 @@ def server(input, output, session):
             xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-                automargin=True,
+                automargin=True, tickangle=-35,
             ),
             margin=dict(l=60, r=20, t=10, b=80),
             height=274,
