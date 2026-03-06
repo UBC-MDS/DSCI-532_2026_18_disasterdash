@@ -1163,7 +1163,7 @@ def server(input, output, session):
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n = len(grp)
-        palette = pc.sample_colorscale("plasma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
 
         y_max   = grp[column].max()
         y_range = [0, y_max * 1.25]
@@ -1172,7 +1172,7 @@ def server(input, output, session):
             x=grp["disaster_type"],
             y=grp[column],
             orientation="v",
-            marker=dict(color=palette, line=dict(width=0.5)),
+            marker=dict(color=palette, line=dict(width=0)),
             customdata=grp[["fmt"]],
             hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
             text=grp["fmt"],
@@ -1189,7 +1189,8 @@ def server(input, output, session):
             xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-                automargin=True, tickangle=-35,
+                automargin=True,
+                range=[-0.5, len(grp) - 0.5],  # prevents clipping regardless of value range
             ),
             margin=dict(l=60, r=20, t=10, b=80),
             height=274,
