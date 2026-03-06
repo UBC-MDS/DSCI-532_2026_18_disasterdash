@@ -191,7 +191,7 @@ html, body, .bslib-page-fill {{
     flex-shrink: 0;
 }}
 #page-header h1 {{
-    font-family: 'Syne', sans-serif;
+    font-family: 'Arial Black', sans-serif;
     font-size: 1.55rem;
     font-weight: 800;
     color: #fff;
