@@ -93,7 +93,7 @@ MAP_METRICS = {
     "casualties":   "Total Casualties",
 }
 QUESTION_MAP = {
-    "total_loss": "Where are disasters causing the greatest economic losses?",
+    "total_loss": "Where are disasters causing the highest economic losses?",
     "coverage_pct": "Where are disaster losses least covered by aid?",
     "disasters": "Where are disasters occurring most frequently?",
     "casualties": "Where are disasters causing the greatest loss of life?",
@@ -415,7 +415,7 @@ html, body, .bslib-page-fill {{
     font-weight: 700 !important;
     letter-spacing: 1px !important;
     text-transform: uppercase !important;
-    padding: 10px 16px !important;
+    padding: 8px 16px !important;
     font-family: 'Instrument Sans', sans-serif !important;
     display: flex;
     align-items: center;
@@ -988,6 +988,7 @@ def server(input, output, session):
             agg, locations="iso3",
             color=metric,
             hover_name="country",
+            range_color=(agg[metric].min(), agg[metric].max()),
             hover_data={
                 "iso3": False, metric: False,
                 "disasters": True, "cas_fmt": True,
@@ -1032,7 +1033,7 @@ def server(input, output, session):
         fig.update_traces(marker_line_color="#94a3b8", marker_line_width=0.5)
         fig.update_layout(
             margin=dict(l=0, r=80, t=0, b=0),
-            height=340,
+            height=360,
             coloraxis_colorbar=dict(
                 title=dict(text=metric_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
                 orientation="v", x=1.02, xanchor="left", y=0.5, yanchor="middle",
@@ -1046,7 +1047,7 @@ def server(input, output, session):
                 bgcolor="#fff", font_color=T_PRI, font_size=11,
                 font_family="Instrument Sans", bordercolor=NAVY,
             ),
-            geo=dict(domain=dict(x=[0, 0.96], y=[0, 1])),
+            geo=dict(domain=dict(x=[0, 0.96], y=[0.1, 1])),
         )
         return fig
 
