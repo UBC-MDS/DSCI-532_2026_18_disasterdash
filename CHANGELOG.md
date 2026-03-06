@@ -10,9 +10,6 @@
 - Added CSV export functionality for AI-filtered query results.
 - Added GDP-normalized disaster burden metric using **World Bank 2024 GDP data**.
 - Added explanatory subtitles and formulas to KPI cards to clarify metric calculations.
-- Added support for `GROQ_API_KEY` environment variable to enable the AI QueryChat interface locally and in deployment environments.
-- Added automatic map zoom to selected countries to improve visual function of the map
-- Added active map titles that adjusted based upon the selected map metric to more clearly demonstrate the policy quesion answered by the map visual
 
 ## Changed:
 
@@ -25,6 +22,11 @@
 - Changed the map colour scheme from cividis to viridis so that there is more visual difference across the continuous scale 
 - Updated default dashboard behaviour so the map automatically centers and zooms based on filtered countries rather than showing the full world extent
 - Updated ReadMe document to reflect new AI integration panel requiring a .env file for developers to run the app locally
+- Added support for `GROQ_API_KEY` environment variable to enable the AI QueryChat interface locally and in deployment environments.
+- Added automatic map zoom to selected countries to improve visual function of the map
+- Added active map titles that adjusted based upon the selected map metric to more clearly demonstrate the policy quesion answered by the map visual
+- Flipped all bar charts vertically aligned with some scaling
+- Changed the bar chart color themes to the more moderate 'teal' 
 
 ## Fixed:
 
