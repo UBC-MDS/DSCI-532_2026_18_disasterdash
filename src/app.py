@@ -37,7 +37,28 @@ ISO3 = {
     "Philippines": "PHL", "South Africa": "ZAF", "Spain": "ESP",
     "Turkey": "TUR",    "United States": "USA",
 }
-
+# ── GDP (Current USD, 2024 World Bank) ─────────────────────────────
+GDP = {
+    "Australia": 1757022451652.83,
+    "Bangladesh": 450119432068.852,
+    "Brazil": 2185821648943.86,
+    "Canada": 2243636826633.76,
+    "Chile": 330267137371.592,
+    "China": 18743803170827.2,
+    "Germany": 4685592577804.69,
+    "Spain": 1725671652742.19,
+    "France": 3160442622465.08,
+    "Greece": 256238371778.118,
+    "Indonesia": 1396300098190.97,
+    "India": 3909891533858.08,
+    "Italy": 2380825077243.59,
+    "Japan": 4027597523550.58,
+    "Mexico": 1856365616165.94,
+    "Nigeria": 252261880141.151,
+    "Philippines": 461617509782.355,
+    "United States": 28750956130731.2,
+    "South Africa": 401144998373.585,
+}
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def fmt_currency(v):
     s = "-" if v < 0 else ""
@@ -68,8 +89,14 @@ SUMMARY_CHOICES = {
 MAP_METRICS = {
     "disasters":    "Disaster Frequency",
     "coverage_pct": "Aid Coverage (%)",
-    "casualties":   "Total Casualties",
     "total_loss":   "Economic Loss (USD)",
+    "casualties":   "Total Casualties",
+}
+QUESTION_MAP = {
+    "total_loss": "Where are disasters causing the highest economic losses?",
+    "coverage_pct": "Where are disaster losses least covered by aid?",
+    "disasters": "Where are disasters occurring most frequently?",
+    "casualties": "Where are disasters causing the greatest loss of life?",
 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
@@ -388,7 +415,7 @@ html, body, .bslib-page-fill {{
     font-weight: 700 !important;
     letter-spacing: 1px !important;
     text-transform: uppercase !important;
-    padding: 10px 16px !important;
+    padding: 8px 16px !important;
     font-family: 'Instrument Sans', sans-serif !important;
     display: flex;
     align-items: center;
@@ -440,13 +467,13 @@ html, body, .bslib-page-fill {{
     line-height: 1;
 }}
 .kpi-value {{
-    font-family: 'Syne', sans-serif;
-    font-size: 1.7rem;
-    font-weight: 800;
-    color: {T_PRI};
-    letter-spacing: -0.5px;
+    font-family: inherit !important;
+    font-size: 2rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
     line-height: 1;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }}
 .kpi-title {{
     font-size: 0.62rem;
@@ -455,7 +482,6 @@ html, body, .bslib-page-fill {{
     letter-spacing: 1px;
     color: {T_SEC};
 }}
-
 /* ── TABS ── */
 .nav-underline {{
     border-bottom: 2px solid {BORDER} !important;
@@ -608,7 +634,7 @@ app_ui = ui.page_fillable(
                 ui.input_selectize(
                     "countries", label=None,
                     choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
-                    selected=COUNTRIES, multiple=True,
+                    selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
                     options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
                 ),
                 ui.div(
@@ -684,7 +710,7 @@ app_ui = ui.page_fillable(
                         # Row 1: Map + KPIs
                         ui.layout_columns(
                             ui.card(
-                                ui.card_header("🗺️  Disaster Map"),
+                                ui.card_header(ui.output_ui("map_title")),
                                 output_widget("map_plot"),
                                 full_screen=True,
                             ),
@@ -763,7 +789,7 @@ app_ui = ui.page_fillable(
 
             # Footer
             ui.div(
-                ui.span("Disaster Dash v3  ·  "),
+                ui.span("Disaster Dash (v3)  ·  "),
                 ui.span("Ojasv Issar, Joel Nicholas Peterson, Claire Saunders  ·  "),
                 ui.a("GitHub", href="https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash", target="_blank"),
                 ui.span(f"  ·  Data through {LAST_UPDATED}"),
@@ -807,7 +833,7 @@ def server(input, output, session):
     @reactive.effect
     @reactive.event(input.reset_button)
     def _reset():
-        ui.update_selectize("countries",     selected=COUNTRIES,      session=session)
+        ui.update_selectize("countries",     selected=["Brazil", "Bangladesh", "South Africa"],      session=session)
         ui.update_selectize("disaster_type", selected=DISASTER_TYPES, session=session)
         ui.update_select("summary_stat",     selected="sum",          session=session)
         ui.update_select("map_metric",       selected="disasters",    session=session)
@@ -875,30 +901,54 @@ def server(input, output, session):
     def kpi_grid():
         data = filtered_df()
         if data.empty:
-            cov_val = "—"; gap_val = "—"
+            gap_dollar_val = "-"
+            gap_pct_val = "-"
         else:
-            loss    = data["economic_loss_usd"].sum()
-            aid     = data["aid_amount_usd"].sum()
-            cov     = (aid / loss * 100) if loss > 0 else 0.0
-            gap     = loss - aid
-            cov_val = f"{cov:.1f}%"
-            gap_val = fmt_currency(gap)
+            # Total Funding Gap
+            total_loss    = data["economic_loss_usd"].sum()
+            total_aid     = data["aid_amount_usd"].sum()
+            total_gap     = total_loss - total_aid
+            gap_dollar_val = fmt_currency(total_gap)
+            # GDP Normalized Median Gap (%)
+            agg = (
+                data.groupby("country").agg(
+                    loss=("economic_loss_usd", "sum"),
+                    aid=("aid_amount_usd", "sum")
+                ).reset_index()
+            )
+            agg["gap"] = agg["loss"] - agg["aid"]
+            agg["gdp"] = agg["country"].map(GDP)
 
-        def kpi_box(cls, icon, value, title):
+            if agg.empty:
+                gap_pct_val="-"
+            else:
+                agg["gap_pct_gdp"] = (agg["gap"]/agg["gdp"])*100
+                median_gap_pct = agg["gap_pct_gdp"].median()
+                gap_pct_val = f"{median_gap_pct:.2f}%"
+
+        def kpi_box(cls, value, title, subtitle=None):
             return ui.div(
-                ui.div(icon, class_="kpi-icon"),
                 ui.div(value, class_="kpi-value"),
                 ui.div(title, class_="kpi-title"),
+                ui.div(subtitle, class_="kpi-subtitle") if subtitle else None,
                 class_=f"kpi-box {cls}",
             )
 
         return ui.div(
-            kpi_box("kpi-coverage", "🛡️", cov_val, "Aid Coverage"),
-            kpi_box("kpi-gap",      "⚠️", gap_val, "Funding Gap"),
+            kpi_box("kpi-gap",
+                     gap_dollar_val, 
+                     "Total Funding Gap", 
+                     "Total Loss - Total Aid"),
+            kpi_box("kpi-coverage", 
+                    gap_pct_val, 
+                    "Median Gap (% of GDP)",
+                    "Typical country shortfall relative to its economy"),
             class_="kpi-grid",
             style="height:100%;",
         )
-
+    @render.text
+    def map_title():
+        return QUESTION_MAP[input.map_metric()]
     # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
@@ -938,6 +988,7 @@ def server(input, output, session):
             agg, locations="iso3",
             color=metric,
             hover_name="country",
+            range_color=(agg[metric].min(), agg[metric].max()),
             hover_data={
                 "iso3": False, metric: False,
                 "disasters": True, "cas_fmt": True,
@@ -952,24 +1003,40 @@ def server(input, output, session):
             },
             color_continuous_scale="viridis",
         )
+        # ── Auto zoom to selected countries ──
         fig.update_geos(
             projection_type="natural earth",
+            fitbounds="locations",
+            scope="world",   
             showframe=False,
-            showcoastlines=True,  coastlinecolor="#94a3b8",
-            showland=True,        landcolor="#e8edf4",
-            showocean=True,       oceancolor="#d4e5f7",
-            showlakes=True,       lakecolor="#d4e5f7",
-            showcountries=True,   countrycolor="#94a3b8",
-            lataxis_range=[-58, 80], lonaxis_range=[-170, 180],
+            # Borders
+            showcountries=True,
+            countrycolor="#64748b",
+            countrywidth=0.8,
+
+            showcoastlines=True,
+            coastlinecolor="#64748b",
+            coastlinewidth=0.6,
+
+            # Land & water
+            showland=True,
+            landcolor="#e8edf4",
+
+            showocean=True,
+            oceancolor="#dbeafe",
+
+            showlakes=True,
+            lakecolor="#dbeafe",
+
             bgcolor="rgba(0,0,0,0)",
         )
         fig.update_traces(marker_line_color="#94a3b8", marker_line_width=0.5)
         fig.update_layout(
             margin=dict(l=0, r=80, t=0, b=0),
-            height=340,
+            height=360,
             coloraxis_colorbar=dict(
                 title=dict(text=metric_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                orientation="v", x=1.01, xanchor="left", y=0.5, yanchor="middle",
+                orientation="v", x=1.02, xanchor="left", y=0.5, yanchor="middle",
                 thickness=11, len=0.55,
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 outlinewidth=0,
@@ -980,7 +1047,7 @@ def server(input, output, session):
                 bgcolor="#fff", font_color=T_PRI, font_size=11,
                 font_family="Instrument Sans", bordercolor=NAVY,
             ),
-            geo=dict(domain=dict(x=[0, 0.93], y=[0, 1])),
+            geo=dict(domain=dict(x=[0, 0.96], y=[0.1, 1])),
         )
         return fig
 
