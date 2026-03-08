@@ -1,5 +1,37 @@
 # CHANGELOG 
 
+## [0.3.0] - 2026-03-08
+
+## Added:
+
+- Implemented a new AI-powered tab featuring a querychat interface for natural language filtering.
+- Added a reactive dataframe output displaying the AI-filtered dataset.
+- Added a data download button to export the AI-filtered dataframe.
+- Added GDP-normalized disaster burden metric using **World Bank 2024 GDP data**.
+- Added explanatory subtitles and formulas to KPI cards to clarify metric calculations.
+
+
+
+## Changed:
+
+- Replaced **Aid Coverage %** and **Funding Gap** with:
+   **Total Unfunded Disaster Losses**
+   **Disaster Burden (% of GDP)**.
+- Changed the title header font style
+
+## Fixed:
+
+- Removed decorative KPI icons that were not tied to meaningful analytical comparisons.
+- Updated KPI cards to improve interpretability based on instructor feedback.
+- Refined KPI typography and spacing to improve readability and visual hierarchy.
+
+## Known Issues:
+
+## Reflection:
+
+## Future Upgrades 
+
+
 ## [0.2.0] - 2026-02-28
 
 
