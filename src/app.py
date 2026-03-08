@@ -1057,19 +1057,22 @@ def server(input, output, session):
         grp = (
             data.groupby("disaster_type")[column]
             .agg(stat).reset_index()
-            .sort_values(column, ascending=True)
+            .sort_values(column, ascending=False)
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
-        palette = pc.sample_colorscale("magma", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
+
+        y_max   = grp[column].max()
+        y_range = [0, y_max * 1.25]
 
         fig = go.Figure(go.Bar(
-            y=grp["disaster_type"],
-            x=grp[column],
-            orientation="h",
+            x=grp["disaster_type"],
+            y=grp[column],
+            orientation="v",
             marker=dict(color=palette, line=dict(width=0)),
             customdata=grp[["fmt"]],
-            hovertemplate="<b>%{y}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
+            hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
             text=grp["fmt"],
             textposition="outside",
             textfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
@@ -1080,17 +1083,19 @@ def server(input, output, session):
                 x=1, y=1.05, xanchor="right", yanchor="bottom",
                 showarrow=False, font=dict(size=9, color=T_SEC, family="Instrument Sans"),
             )],
-            xaxis=dict(
+            yaxis=dict(
                 title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
+                range=y_range,
             ),
-            yaxis=dict(
+            xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
                 automargin=True,
+                autorange=True,  # let Plotly calculate range naturally
             ),
-            margin=dict(l=10, r=70, t=22, b=42),
+            margin=dict(l=60, r=20, t=22, b=80),
             height=274,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
@@ -1152,35 +1157,40 @@ def server(input, output, session):
         grp = (
             data.groupby("disaster_type")[column]
             .sum().reset_index()
-            .sort_values(column, ascending=True)
+            .sort_values(column, ascending=False)
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
         n = len(grp)
-        palette = pc.sample_colorscale("cividis", [i / max(n - 1, 1) for i in range(n)])
+        palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
+
+        y_max   = grp[column].max()
+        y_range = [0, y_max * 1.25]
 
         fig = go.Figure(go.Bar(
-            y=grp["disaster_type"],
-            x=grp[column],
-            orientation="h",
+            x=grp["disaster_type"],
+            y=grp[column],
+            orientation="v",
             marker=dict(color=palette, line=dict(width=0)),
             customdata=grp[["fmt"]],
-            hovertemplate="<b>%{y}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
+            hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
             text=grp["fmt"],
             textposition="outside",
             textfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
         ))
         fig.update_layout(
-            xaxis=dict(
+            yaxis=dict(
                 title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
+                range=y_range,
             ),
-            yaxis=dict(
+            xaxis=dict(
                 tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
                 showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
                 automargin=True,
+                autorange=True,  # let Plotly calculate range naturally
             ),
-            margin=dict(l=10, r=70, t=10, b=42),
+            margin=dict(l=60, r=20, t=10, b=80),
             height=274,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
