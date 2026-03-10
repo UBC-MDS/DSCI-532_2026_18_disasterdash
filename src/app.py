@@ -13,6 +13,8 @@ import plotly.graph_objects as go
 import plotly.colors as pc
 from querychat import QueryChat
 import io
+import ibis
+from ibis import _ 
 
 # Load .env from project root (parent of src/)
 # override=True ensures python-dotenv's quote-stripped value beats VS Code's raw injection
@@ -22,10 +24,11 @@ try:
 except ImportError:
     pass
 
-# ── Load Data ──────────────────────────────────────────────────────────────────
+# ── Lazy Load Data with DuckDB────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).resolve().parent.parent
-DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
-df = pd.read_csv(DATA_PATH, parse_dates=["date"])
+DATA_PATH = BASE_DIR / "data" / "processed" / "global_disaster_response_2018_2024.parquet"
+con = ibis.duckdb.connect() 
+disaster_table = con.read_parquet(DATA_PATH)
 
 # ── Country → ISO-3 ────────────────────────────────────────────────────────────
 ISO3 = {
