@@ -63,9 +63,16 @@ flowchart TD
 - **Consumed by:** `bar_loss`, `bar_aid`
 
 ### KPI Calculations
-- **`kpi_grid` — Aid Coverage:** `sum(aid_amount_usd) / sum(economic_loss_usd) × 100` — displayed as a percentage representing how much of total economic loss is covered by aid across the filtered selection.
-- **`kpi_grid` — Funding Gap:** `sum(economic_loss_usd) - sum(aid_amount_usd)` — displayed in dollars representing the total uncovered economic loss across the filtered selection.
-- Both KPIs always use `sum` aggregation regardless of the `summary_stat` selection.
+
+### `kpi_grid` — Total Unfunded Disaster Losses
+- **Formula:** `sum(economic_loss_usd) - sum(aid_amount_usd)`
+- **Meaning:** Represents the total disaster-related economic loss not covered by humanitarian aid across the filtered selection.
+
+### `kpi_grid` — Disaster Burden (% of GDP)
+- **Formula:** `median((economic_loss_usd - aid_amount_usd) / GDP × 100)` computed at the country level.
+- **Meaning:** Represents the typical disaster funding gap relative to a country's economic size, allowing comparison between large and small economies.
+
+Both KPIs always use **sum aggregation** for loss and aid regardless of the `summary_stat` selection used in the bar charts.
 
 ### Map Aggregation (inline)
 - **Depends on:** `filtered_df`, `map_metric`
