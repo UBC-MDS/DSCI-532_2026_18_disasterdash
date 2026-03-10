@@ -10,6 +10,16 @@ Some pull requests were large integration PRs created after significant local de
 
 After discussing this feedback as a team, we agreed to adjust our workflow to focus on smaller pull requests, clearer documentation of design decisions, and consistent peer review before merging changes.
 
+## Collaboration Norms for Milestone 4
+
+For the final milestone we agreed on the following collaboration practices:
+
+- **Atomic pull requests:** Features and fixes will be submitted as smaller, focused PRs rather than large integration changes.
+- **Design before code:** The specification document will be updated as design decisions are made so it remains a living reference for the project.
+- **Consistent peer review:** All PRs will receive at least one teammate review before merging.
+- **Clear PR descriptions:** Each PR should explain both *what* was changed and *why*.
+- **Shared code familiarity:** Work will be distributed across team members so everyone remains familiar with multiple parts of the dashboard codebase.
+
 ## Fixing Typos
 
 Small typos or grammatical errors in documentation may be edited directly using the GitHub web interface, so long as the changes are made in the source file.
