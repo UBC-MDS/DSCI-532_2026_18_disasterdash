@@ -23,12 +23,14 @@
 | `summary_stat` | Input | `ui.input_select()` | — | #1, #2, #3, #4 |
 | `map_metric` | Input | `ui.input_select()` | — | #3 |
 | `reset_button` | Input | `ui.input_action_button()` | — | #1, #2, #3, #4 |
+| `disaster_table` | Data source | ibis table backed by DuckDb | parquet dataset | #1, #2, #3, #4 |
 | `filtered_df` | Reactive calc | `@reactive.calc` | `countries`, `date_range`, `disaster_type` | #1, #2, #3, #4 |
 | `filter_strip` | Output | `@render.ui` | `countries`, `date_range`, `disaster_type`, `summary_stat`, `map_metric` | #1, #2, #3, #4 |
 | `kpi_grid` | Output | `@render.ui` | `filtered_df` | #1, #3, #4 |
 | `map_plot` | Output | `@render_widget` (Plotly choropleth) | `filtered_df`, `map_metric` | #2, #3 |
 | `bar_loss` | Output | `@render_widget` (Plotly bar) | `filtered_df`, `summary_stat` | #1, #3, #4 |
 | `bar_aid` | Output | `@render_widget` (Plotly bar) | `filtered_df`, `summary_stat` | #1, #3, #4 |
+
 
 ## Reactivity Diagram
 
