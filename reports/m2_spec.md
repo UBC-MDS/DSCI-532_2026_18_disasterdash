@@ -31,6 +31,12 @@
 | `map_plot` | Output | `@render_widget` (Plotly choropleth) | `filtered_df`, `map_metric` | #2, #3 |
 | `bar_loss` | Output | `@render_widget` (Plotly bar) | `filtered_df`, `summary_stat` | #1, #3, #4 |
 | `bar_aid` | Output | `@render_widget` (Plotly bar) | `filtered_df`, `summary_stat` | #1, #3, #4 |
+| `chat` | Output | `querychat` UI component | — | #5 |
+| `ai_df` | Reactive calc | QueryChat filtered dataframe | `chat` | #5 |
+| `ai_table` | Output | `@render.data_frame` | `ai_df` | #5 |
+| `download_ai_csv` | Output | `@render.download` | `ai_df` | #5 |
+| `ai_bar_loss` | Output | `@render_widget` (Plotly bar) | `ai_df` | #5 |
+| `ai_bar_aid` | Output | `@render_widget` (Plotly bar) | `ai_df` | #5 |
 
 ## Reactivity Diagram
 
