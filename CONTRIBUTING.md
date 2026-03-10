@@ -1,6 +1,14 @@
 # Contributing to Disaster Dash
 
-Thank you for your interest in contributing to Disaster Dash! This guide outlines how to propose changes to the project. For questions about the contribution process, please open an issue or contact a core group member.
+Thank you for your interest in contributing to Disaster Dash! This document outlines a Milestone 3 workflow retrospective from the dashboard authors, collaboration norms for Milestone 4, and guidelines for proposing changes to the project. For questions about the contribution process, please open an issue or contact a core group member.
+
+## Milestone 3 Retrospective
+
+During Milestones 1–3 our team successfully developed the core functionality of Disaster Dash and maintained an active GitHub workflow using issues, a development branch (`dev`), pull requests, and a project board to track tasks. However, collaboration feedback highlighted several areas for improvement in our development process.
+
+Some pull requests were large integration PRs created after significant local development, which made them harder to review effectively. In addition, design documentation was not always updated alongside feature development, which meant the specification document sometimes lagged behind the implementation.
+
+After discussing this feedback as a team, we agreed to adjust our workflow to focus on smaller pull requests, clearer documentation of design decisions, and consistent peer review before merging changes.
 
 ## Fixing Typos
 
@@ -21,11 +29,12 @@ Before you make a substantial pull request, you should always file an issue and 
 ## Pull Request Process
 
 * We recommend that you create a Git branch for each pull request (PR)
-* New code should follow the [PEP 8 style guide](https://pep8.org/)
+* Pull requests should be small and focused on a single feature or fix whenever possible
+* New code should follow the PEP 8 style guide
 * Use descriptive commit messages
 * We use docstrings for documentation - please include them for new functions
 * Contributions with test cases are easier to accept
-* Update `README.md` or relevant documentation if your changes affect how users interact with the dashboard
+* Update `README.md`, `m2_spec.md`, or other relevant documentation if your changes affect how users interact with the dashboard
 * In your pull request description, clearly explain what changes you've made and why
 
 ## Code Standards
