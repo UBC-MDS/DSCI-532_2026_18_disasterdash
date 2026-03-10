@@ -23,7 +23,7 @@
 | `summary_stat` | Input | `ui.input_select()` | — | #1, #2, #3, #4 |
 | `map_metric` | Input | `ui.input_select()` | — | #3 |
 | `reset_button` | Input | `ui.input_action_button()` | — | #1, #2, #3, #4 |
-| `disaster_table` | Data source | ibis table backed by DuckDb | parquet dataset | #1, #2, #3, #4 |
+| `disaster_table` | Data source | ibis table backed by DuckDB | parquet dataset | #1, #2, #3, #4 |
 | `filtered_df` | Reactive calc | `@reactive.calc` | `countries`, `date_range`, `disaster_type` | #1, #2, #3, #4 |
 | `filter_strip` | Output | `@render.ui` | `countries`, `date_range`, `disaster_type`, `summary_stat`, `map_metric` | #1, #2, #3, #4 |
 | `kpi_grid` | Output | `@render.ui` | `filtered_df` | #1, #3, #4 |
@@ -56,7 +56,8 @@ flowchart TD
 
 ### `filtered_df`
 - **Depends on:** `countries`, `date_range`, `disaster_type`
-- **Transformation:** Filters the full disaster dataset to rows matching the selected disaster type(s), within the selected date range, and for the selected countries. Excludes the `"_all_"` sentinel value used by the selectize widgets.
+- **Transformation:** Constructs a DuckDB query using ibis that filters the Parquet dataset according to the selected countries, disaster types, and date range. These filters are applied lazily at the database level so that only matching rows are retrieved.
+- **Execution:** The query is executed when the reactive value is consumed, at which point the filtered result is materialized as a pandas DataFrame (e.g., via `.to_pandas()`).
 - **Consumed by:** `kpi_grid`, `map_plot`, `bar_loss`, `bar_aid`, `filter_strip`
 
 ### Bar Chart Aggregation (inline)
@@ -88,3 +89,11 @@ This feature uses `@reactive.event()` in combination with `@reactive.effect()` t
 * Prevents “empty state” traps during exploratory analysis
 * Improves workflow efficiency when comparing multiple scenarios
 * Demonstrates correct event-based reactive architecture
+
+## Data Access Architecture
+
+To improve performance and scalability, the dashboard reads data from a **Parquet dataset** using **DuckDB via ibis**.
+
+Instead of loading the entire dataset into memory, user-selected filters are translated into a database query that is executed lazily. Only rows matching the selected filters are materialized into a pandas DataFrame when required by downstream reactive components.
+
+This approach ensures that filtering occurs at the database level and allows the dashboard to scale to larger datasets while keeping memory usage low.
