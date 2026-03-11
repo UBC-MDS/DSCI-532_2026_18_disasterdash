@@ -12,6 +12,8 @@ dependencies:
   - seaborn
   - shiny
   - shinywidgets
+  - ibis-framework
+  - duckdb
   - pip:
       - anywidget
       - groq
