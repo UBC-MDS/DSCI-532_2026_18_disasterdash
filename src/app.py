@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 import plotly.colors as pc
 from querychat import QueryChat
 import io
+import ibis
 
 # Load .env from project root (parent of src/)
 # override=True ensures python-dotenv's quote-stripped value beats VS Code's raw injection
@@ -22,10 +23,12 @@ try:
 except ImportError:
     pass
 
-# ── Load Data ──────────────────────────────────────────────────────────────────
+# ── Lazy Load Data with DuckDB────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).resolve().parent.parent
-DATA_PATH = BASE_DIR / "data" / "raw" / "global_disaster_response_2018_2024.csv"
-df = pd.read_csv(DATA_PATH, parse_dates=["date"])
+DATA_PATH = BASE_DIR / "data" / "processed" / "global_disaster_response_2018_2024.parquet"
+con = ibis.duckdb.connect() 
+disaster_table = con.read_parquet(DATA_PATH)
+df = disaster_table.execute()   # only for QueryChat and Header Stats
 
 # ── Country → ISO-3 ────────────────────────────────────────────────────────────
 ISO3 = {
@@ -101,20 +104,16 @@ QUESTION_MAP = {
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
 
 # ── QueryChat Config ───────────────────────────────────────────────────────────
-# Uses Groq API with meta-llama/llama-4-maverick-17b-128e-instruct
-# (Llama 4 Maverick — fast, free tier, reliable tool/function calling).
-# Prerequisites:
-#   Add to your .env file:  GROQ_API_KEY=your_key_here
+# Uses Anthropic Claude (Haiku) for natural language dataframe queries
+# Requires ANTHROPIC_API_KEY set locally or in Posit Connect secrets
 
 import chatlas, os as _os, sys as _sys
 
-_groq_key = _os.getenv("GROQ_API_KEY")
-if not _groq_key:
+_anthropic_key = _os.getenv("ANTHROPIC_API_KEY")
+if not _anthropic_key:
     print(
-        "\n❌  GROQ_API_KEY is not set.\n"
-        "   1. Get a free key at https://console.groq.com/keys\n"
-        "   2. Add to .env:  GROQ_API_KEY=your_key_here\n"
-        "   3. Re-run:       shiny run src/app.py\n",
+        "\n❌  ANTHROPIC_API_KEY is not set.\n"
+        "   Add it to your .env or Posit Connect secrets.\n",
         file=_sys.stderr,
     )
     _sys.exit(1)
@@ -122,7 +121,7 @@ if not _groq_key:
 qc = QueryChat(
     df,
     "global_disaster_response_2018_2024",
-    client=chatlas.ChatGroq(model="meta-llama/llama-4-maverick-17b-128e-instruct", api_key=_groq_key),
+    client=chatlas.ChatAnthropic(model="claude-3-haiku-20240307", api_key=_anthropic_key),
     greeting="""Hi! I'm your **Disaster Dash AI assistant** 🌍
 
 Ask me natural language questions to filter the disaster dataset. Try:
@@ -857,15 +856,21 @@ def server(input, output, session):
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
     @reactive.calc
     def filtered_df():
-        countries = [c for c in input.countries()     if c != "_all_"]
-        disasters = [d for d in input.disaster_type() if d != "_all_"]
-        mask = (
-            df["country"].isin(countries) &
-            df["disaster_type"].isin(disasters) &
-            (df["date"] >= pd.to_datetime(input.date_range()[0])) &
-            (df["date"] <= pd.to_datetime(input.date_range()[1]))
-        )
-        return df[mask].copy()
+        c = ibis._
+        expr = disaster_table
+
+        countries = [x for x in input.countries()     if x != "_all_"]
+        if countries:
+            expr = expr.filter(c.country.isin(countries))
+
+        disasters = [x for x in input.disaster_type() if x != "_all_"]
+        if disasters:
+            expr = expr.filter(c.disaster_type.isin(disasters))
+
+        start, end = input.date_range()
+        expr = expr.filter(c.date.between(start, end))
+
+        return expr
 
     # ── Empty figure helper ───────────────────────────────────────────────────
     def _empty_fig(msg="No data to display", hint="Adjust your filters"):
@@ -889,7 +894,7 @@ def server(input, output, session):
     # ── KPI Grid ──────────────────────────────────────────────────────────────
     @render.ui
     def kpi_grid():
-        data = filtered_df()
+        data = filtered_df().execute()
         if data.empty:
             gap_dollar_val = "-"
             gap_pct_val = "-"
@@ -947,7 +952,7 @@ def server(input, output, session):
     # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
-        data   = filtered_df()
+        data   = filtered_df().execute()
         metric = input.map_metric()
 
         if data.empty:
@@ -1048,7 +1053,7 @@ def server(input, output, session):
 
     # ── Overview Bar Chart Helper ─────────────────────────────────────────────
     def _make_bar(column, y_label):
-        data = filtered_df()
+        data = filtered_df().execute()
         if data.empty:
             return _empty_fig("No data to display", "Select countries and disaster types to view")
 
