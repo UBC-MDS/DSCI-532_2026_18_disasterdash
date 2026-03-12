@@ -11,9 +11,6 @@ def test_millions():
 
 def test_thousands():
     assert fmt_num(18_000) == "18.0K"
-
-def test_thousands():
-    assert fmt_num(18_000) == "18.0K"
  
 def test_sub_thousand():
     assert fmt_num(42) == "42"
