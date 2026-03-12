@@ -16,6 +16,7 @@ dependencies:
   - duckdb
   - pip:
       - anywidget
-      - groq
       - python-dotenv
       - querychat
+      - chatlas
+      - anthropic
