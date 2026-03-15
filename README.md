@@ -40,11 +40,13 @@ conda activate disaster-dash
 
 4. Configure environment variables
 
-The **AI Explorer** tab uses the Groq API to power natural-language queries.  
-To run the app locally, you must provide a Groq API key.
+The **AI Explorer** tab uses the **Anthropic API** to power natural-language queries.
 
-- Create a free API key at:  
-  https://console.groq.com/keys
+To run the AI Explorer locally, you must provide an Anthropic API key.
+
+
+- Create an API key at:  
+  https://console.anthropic.com/
 
 - In the project root, create a `.env` file:
 
@@ -55,7 +57,7 @@ touch .env
 - Add your API key to the file:
 
 ```bash
-GROQ_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
 ```
 
 - Install chromium in the environment to run playwright tests

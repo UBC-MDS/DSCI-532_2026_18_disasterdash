@@ -14,9 +14,13 @@ dependencies:
   - seaborn
   - shiny
   - shinywidgets
+  - ibis-framework
+  - duckdb
   - pip:
       - anywidget
       - anthropic
       - playwright
       - python-dotenv
       - querychat
+      - chatlas
+
