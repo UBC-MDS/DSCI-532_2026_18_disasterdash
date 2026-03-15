@@ -8,6 +8,8 @@ dependencies:
   - pandas
   - pip
   - plotly
+  - pytest
+  - pytest-playwright
   - python=3.11
   - seaborn
   - shiny
@@ -15,5 +17,6 @@ dependencies:
   - pip:
       - anywidget
       - groq
+      - playwright
       - python-dotenv
       - querychat

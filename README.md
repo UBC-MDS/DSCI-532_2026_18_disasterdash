@@ -58,6 +58,18 @@ touch .env
 GROQ_API_KEY=your_key_here
 ```
 
+- Install chromium in the environment to run playwright tests
+
+```bash
+playwright install chromium
+```
+
+- Run playwright tests from root directory
+
+```bash
+ pytest tests/test_dash_playwrite.py
+```
+
 The application automatically loads this key using `python-dotenv`.
 
 > **Note:** The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
