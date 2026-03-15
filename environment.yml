@@ -16,7 +16,7 @@ dependencies:
   - shinywidgets
   - pip:
       - anywidget
-      - groq
+      - anthropic
       - playwright
       - python-dotenv
       - querychat
