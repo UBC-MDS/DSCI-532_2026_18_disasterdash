@@ -42,6 +42,7 @@
 - Data only goes up to 2024.
 - Demo GIF performs demo on posit cloud build with some lag and lower resolution from browser recording
 - Demo GIF out of date with current dashboard
+- Left bar chart continues to randonly render out of scale - future exploration of Shiny and async issues. 
 
 
 ## Reflection:
