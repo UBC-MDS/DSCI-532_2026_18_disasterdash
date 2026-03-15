@@ -8,11 +8,13 @@
 
 Global aid policy workers face a critical challenge: understanding where disaster aid responses are insufficient compared to actual economic losses. Without a clear understanding of the aid gaps, policymakers may struggle to develop effective responses to global disasters.
 
-Disaster Dash is an interactive dashboard that makes these gaps visible. Users can explore global disaster frequency on a World Map, filter by disaster type, dates, and countries, and directly compare economic losses against aid responses through clear visualizations.
+**Disaster Dash** is an interactive dashboard that makes these gaps visible. Users can explore global disaster frequency on a World Map, filter by disaster type, dates, and countries, and directly compare economic losses against aid responses through coordinated visualizations.
+
+The dashboard also includes an **AI Explorer** that allows users to query the dataset using natural language.
 
 This dashboard is a group project for the Master of Data Science program at the University of British Columbia, DSCI 532: Data Visualization, 2025-26 Cohort.
 
-## Deployed App
+## Live Dashboard
 
 | Build | URL |
 |-------|-----|
@@ -23,6 +25,7 @@ This dashboard is a group project for the Master of Data Science program at the 
 ## Running the Dashboard Locally
 
 1. Clone this repository
+
 ```bash
 git clone https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash.git
 cd DSCI-532_2026_18_disasterdash
@@ -42,8 +45,7 @@ conda activate disaster-dash
 
 The **AI Explorer** tab uses the **Anthropic API** to power natural-language queries.
 
-To run the AI Explorer locally, you must provide an Anthropic API key.
-
+To run the dashboard locally, you must provide an Anthropic API key.
 
 - Create an API key at:  
   https://console.anthropic.com/
@@ -62,7 +64,10 @@ ANTHROPIC_API_KEY=your_key_here
 
 The application automatically loads this key using `python-dotenv`.
 
-> **Note:** The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
+> **Note:** 
+The `.env` step is required to run the dashboard locally. 
+The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
+
 
 5. Run the dashboard
 
