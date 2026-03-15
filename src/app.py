@@ -1116,7 +1116,7 @@ def server(input, output, session):
         return fig
 
     def _make_bar(column, y_label):
-        data = filtered_df().execute()
+        data = filtered_df()
         if data.empty:
             return _empty_fig("No data to display", "Select countries and disaster types to view")
         stat     = input.summary_stat()
