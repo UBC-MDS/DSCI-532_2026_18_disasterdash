@@ -1100,9 +1100,10 @@ def server(input, output, session):
             annotations=all_annotations,
             yaxis=yaxis_cfg,
             xaxis=dict(
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-                automargin=True,
+            tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+            showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
+            automargin=True,
+            tickangle=-45,
             ),
             margin=dict(l=60, r=20, t=28, b=80),
             height=274,
