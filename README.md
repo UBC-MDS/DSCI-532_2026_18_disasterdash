@@ -77,6 +77,23 @@ shiny run src/app.py
 
 6. Open your browser to the URL shown in the terminal.
 
+
+## Running Tests
+
+The test suite verifies core dashboard behaviors including filtering logic, aggregation correctness, and UI interactions.
+
+1) Install Playwright browser dependencies (required once):
+
+```bash
+playwright install
+```
+
+2) Run all tests:
+
+```bash 
+pytest
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
