@@ -944,9 +944,10 @@ def server(input, output, session):
             ) * 100
             gap_arrow = ""
             gap_arrow = "▲" if gap_delta > 0 else "▼"
-            gap_subtitle = (
-                f"{gap_arrow} {abs(gap_delta):.1f}% vs global average"
-            )
+            gap_color = RED if gap_delta > 0 else GREEN
+            gap_subtitle = ui.HTML(
+                f"<span style='color:{gap_color}'>{gap_arrow} {abs(gap_delta):.1f}%</span> vs global average"
+                )
             # GDP Normalized Median Gap (%)
             agg = (
                 data.groupby("country").agg(
@@ -965,9 +966,11 @@ def server(input, output, session):
                 gap_pct_val = f"{median_gap_pct:.2f}%"
                 pct_delta = median_gap_pct - GLOBAL_GAP_MEDIAN
                 pct_arrow = "▲" if pct_delta > 0 else "▼"
-                gap_pct_subtitle = (
-                    f"{pct_arrow} {abs(pct_delta):.2f}% vs global median"
-                )
+                pct_color = RED if pct_delta > 0 else GREEN
+                gap_pct_subtitle = ui.HTML(
+                    f"<span style='color:{pct_color}'>{pct_arrow} {abs(pct_delta):.2f}%</span> vs global median"
+                    )
+
 
         def kpi_box(cls, value, title, subtitle=None, formula=None):
             return ui.div(
