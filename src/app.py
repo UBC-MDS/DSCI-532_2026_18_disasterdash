@@ -935,19 +935,21 @@ def server(input, output, session):
         else:
             # ── KPI 1: Average Funding Gap per Disaster ───────────────────
 
-            data["gap"] = data["economic_loss_usd"] - data["aid_amount_usd"]
-            gap_per_event = data["gap"].mean()
+            gap_per_event = (data["economic_loss_usd"] - data["aid_amount_usd"]).mean()
             gap_dollar_val = fmt_currency(gap_per_event)
-            gap_delta = (
-                (gap_per_event - GLOBAL_GAP_PER_EVENT)
-                / GLOBAL_GAP_PER_EVENT
-            ) * 100
-            gap_arrow = ""
+            if GLOBAL_GAP_PER_EVENT != 0:
+                gap_delta = (
+                    (gap_per_event - GLOBAL_GAP_PER_EVENT)
+                    / GLOBAL_GAP_PER_EVENT
+                ) * 100
+            else:
+                gap_delta = 0
             gap_arrow = "▲" if gap_delta > 0 else "▼"
             gap_color = RED if gap_delta > 0 else GREEN
+            direction = "higher" if gap_delta > 0 else "lower"
             gap_subtitle = ui.HTML(
-                f"<span style='color:{gap_color}'>{gap_arrow} {abs(gap_delta):.1f}%</span> vs global average"
-                )
+                f"<span style='color:{gap_color}'>{gap_arrow} {abs(gap_delta):.1f}% {direction}</span> than global average"
+            )
             # GDP Normalized Median Gap (%)
             agg = (
                 data.groupby("country").agg(
@@ -967,9 +969,10 @@ def server(input, output, session):
                 pct_delta = median_gap_pct - GLOBAL_GAP_MEDIAN
                 pct_arrow = "▲" if pct_delta > 0 else "▼"
                 pct_color = RED if pct_delta > 0 else GREEN
+                direction = "higher" if pct_delta > 0 else "lower"
                 gap_pct_subtitle = ui.HTML(
-                    f"<span style='color:{pct_color}'>{pct_arrow} {abs(pct_delta):.2f}%</span> vs global median"
-                    )
+                    f"<span style='color:{pct_color}'>{pct_arrow} {abs(pct_delta):.2f}% {direction}</span> than global median"
+                )
 
 
         def kpi_box(cls, value, title, subtitle=None, formula=None):
