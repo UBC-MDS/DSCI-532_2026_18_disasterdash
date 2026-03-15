@@ -855,7 +855,7 @@ def server(input, output, session):
 
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
     @reactive.calc
-    def filtered_df():
+    def filtered_query():
         c = ibis._
         expr = disaster_table
 
@@ -871,6 +871,10 @@ def server(input, output, session):
         expr = expr.filter(c.date.between(start, end))
 
         return expr
+    
+    @reactive.calc
+    def filtered_df():
+        return filtered_query().execute()
 
     # ── Empty figure helper ───────────────────────────────────────────────────
     def _empty_fig(msg="No data to display", hint="Adjust your filters"):
@@ -894,7 +898,7 @@ def server(input, output, session):
     # ── KPI Grid ──────────────────────────────────────────────────────────────
     @render.ui
     def kpi_grid():
-        data = filtered_df().execute()
+        data = filtered_df()
         if data.empty:
             gap_dollar_val = "-"
             gap_pct_val = "-"
@@ -952,7 +956,7 @@ def server(input, output, session):
     # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
-        data   = filtered_df().execute()
+        data   = filtered_df()
         metric = input.map_metric()
 
         if data.empty:
@@ -1053,7 +1057,7 @@ def server(input, output, session):
 
     # ── Overview Bar Chart Helper ─────────────────────────────────────────────
     def _make_bar(column, y_label):
-        data = filtered_df().execute()
+        data = filtered_df()
         if data.empty:
             return _empty_fig("No data to display", "Select countries and disaster types to view")
 
