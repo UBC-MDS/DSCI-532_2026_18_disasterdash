@@ -34,6 +34,7 @@
 - Updated KPI cards to improve interpretability based on instructor feedback.
 - Refined KPI typography and spacing to improve readability and visual hierarchy.
 - Improved layout margins and colorbar spacing to prevent overlap with the map canvas
+- Improved scaling and granularity in bar charts for easier interpretability
 
 ## Known Issues:
 
