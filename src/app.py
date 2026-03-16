@@ -960,6 +960,7 @@ app_ui = ui.page_fillable(
                                 ui.output_ui("ai_query_status"),
                                 qc.ui(id="chat"),
                                 full_screen=True,
+                                fill=True,
                             ),
                             ui.card(
                                 ui.card_header("📋  Filtered Results"),
@@ -969,9 +970,11 @@ app_ui = ui.page_fillable(
                                     "⬇  Download CSV",
                                 ),
                                 full_screen=True,
+                                fill=True,
                             ),
                             col_widths=[5, 7],
-                            style="height:430px; gap:14px;",
+                            style="min-height:520px; gap:14px;",
+                            fill=True,
                         ),
 
                         # Row 2: Two charts driven by AI-filtered data
