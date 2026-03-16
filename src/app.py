@@ -89,6 +89,11 @@ SUMMARY_CHOICES = {
     "min":  "Minimum",
     "max":  "Maximum",
 }
+AI_STYLE_CHOICES = {
+    "concise": "Concise Analyst",
+    "policy_brief": "Policy Brief",
+    "step_by_step": "Step-by-Step",
+}
 MAP_METRICS = {
     "disasters":    "Disaster Frequency",
     "coverage_pct": "Aid Coverage (%)",
@@ -244,6 +249,12 @@ html, body, .bslib-page-fill {{
 .sb-section {{
     padding: 16px 14px 0 14px;
 }}
+.ai-sidebar-note {{
+    margin-top: 7px;
+    font-size: 0.69rem;
+    line-height: 1.35;
+    color: {T_SEC};
+}}
 .sb-label {{
     font-size: 0.6rem;
     font-weight: 700;
@@ -394,6 +405,31 @@ html, body, .bslib-page-fill {{
     font-weight: 600;
 }}
 .fp-sep {{ color: {BORDER}; font-size: 1rem; }}
+
+/* AI helper copy */
+.ai-instructions {{
+    border: 1px solid {BORDER};
+    background: #f8fbff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 8px 12px 10px;
+    font-size: 0.74rem;
+    line-height: 1.35;
+    color: {T_SEC};
+}}
+.ai-instructions .ai-title {{
+    display: block;
+    font-weight: 700;
+    color: {T_PRI};
+    margin-bottom: 4px;
+}}
+.ai-instructions ul {{
+    margin: 6px 0 0 14px;
+    padding: 0;
+}}
+.ai-instructions li {{
+    margin: 2px 0;
+}}
 
 /* ── CARDS ── */
 .card {{
@@ -623,62 +659,83 @@ app_ui = ui.page_fillable(
         # ── Sidebar ────────────────────────────────────────────────────────────
         ui.sidebar(
 
-            ui.div(
-                ui.div("Country", class_="sb-label"),
-                ui.input_selectize(
-                    "countries", label=None,
-                    choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
-                    selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
-                    options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
+            ui.panel_conditional(
+                "input.main_tabs === 'overview'",
+                ui.div(
+                    ui.div("Country", class_="sb-label"),
+                    ui.input_selectize(
+                        "countries", label=None,
+                        choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
+                        selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
+                        options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ),
+                    ui.div(
+                        ui.input_action_button("sel_all_c",   "✓ All",  width="50%"),
+                        ui.input_action_button("desel_all_c", "✕ None", width="50%"),
+                        class_="sb-btns",
+                    ),
+                    class_="sb-section",
                 ),
                 ui.div(
-                    ui.input_action_button("sel_all_c",   "✓ All",  width="50%"),
-                    ui.input_action_button("desel_all_c", "✕ None", width="50%"),
-                    class_="sb-btns",
-                ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Disaster Type", class_="sb-label"),
-                ui.input_selectize(
-                    "disaster_type", label=None,
-                    choices={"_all_": "— All Types —"} | {d: d for d in DISASTER_TYPES},
-                    selected=DISASTER_TYPES, multiple=True,
-                    options={"placeholder": "Select types…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ui.div("Disaster Type", class_="sb-label"),
+                    ui.input_selectize(
+                        "disaster_type", label=None,
+                        choices={"_all_": "— All Types —"} | {d: d for d in DISASTER_TYPES},
+                        selected=DISASTER_TYPES, multiple=True,
+                        options={"placeholder": "Select types…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ),
+                    ui.div(
+                        ui.input_action_button("sel_all_d",   "✓ All",  width="50%"),
+                        ui.input_action_button("desel_all_d", "✕ None", width="50%"),
+                        class_="sb-btns",
+                    ),
+                    class_="sb-section",
                 ),
                 ui.div(
-                    ui.input_action_button("sel_all_d",   "✓ All",  width="50%"),
-                    ui.input_action_button("desel_all_d", "✕ None", width="50%"),
-                    class_="sb-btns",
+                    ui.div("Date Range", class_="sb-label"),
+                    ui.input_date_range(
+                        "date_range", label=None,
+                        start="2018-01-01", end="2024-12-31",
+                        min="2018-01-01",   max="2024-12-31",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Date Range", class_="sb-label"),
-                ui.input_date_range(
-                    "date_range", label=None,
-                    start="2018-01-01", end="2024-12-31",
-                    min="2018-01-01",   max="2024-12-31",
+                ui.div(
+                    ui.div("Map Metric", class_="sb-label"),
+                    ui.input_select(
+                        "map_metric", label=None,
+                        choices=MAP_METRICS, selected="total_loss",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Map Metric", class_="sb-label"),
-                ui.input_select(
-                    "map_metric", label=None,
-                    choices=MAP_METRICS, selected="total_loss",
+                ui.div(
+                    ui.div("Bar Chart Statistic", class_="sb-label"),
+                    ui.input_select(
+                        "summary_stat", label=None,
+                        choices=SUMMARY_CHOICES, selected="sum",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
+                ui.input_action_button("reset_button", "↺  Reset All Filters"),
             ),
-            ui.div(
-                ui.div("Bar Chart Statistic", class_="sb-label"),
-                ui.input_select(
-                    "summary_stat", label=None,
-                    choices=SUMMARY_CHOICES, selected="sum",
+
+            ui.panel_conditional(
+                "input.main_tabs === 'ai_explorer'",
+                ui.div(
+                    ui.div("AI Response Style", class_="sb-label"),
+                    ui.input_select(
+                        "ai_response_style",
+                        label=None,
+                        choices=AI_STYLE_CHOICES,
+                        selected="concise",
+                    ),
+                    ui.div(
+                        "Choose how the assistant writes answers. This changes style, not the underlying data query.",
+                        class_="ai-sidebar-note",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
             ),
-            ui.input_action_button("reset_button", "↺  Reset All Filters"),
 
             width=236,
             open="desktop",
@@ -687,7 +744,10 @@ app_ui = ui.page_fillable(
         # ── Main Content ───────────────────────────────────────────────────────
         ui.div(
             # Active filter strip
-            ui.div(ui.output_ui("filter_strip"), id="filter-strip"),
+            ui.panel_conditional(
+                "input.main_tabs === 'overview'",
+                ui.div(ui.output_ui("filter_strip"), id="filter-strip"),
+            ),
 
             ui.navset_underline(
 
@@ -726,6 +786,7 @@ app_ui = ui.page_fillable(
 
                         class_="main-inner",
                     ),
+                    value="overview",
                 ),
 
                 # ── Tab 2: AI Explorer ───────────────────────────────────────
@@ -737,6 +798,7 @@ app_ui = ui.page_fillable(
                         ui.layout_columns(
                             ui.card(
                                 ui.card_header("💬  Ask a Question About the Data"),
+                                ui.output_ui("ai_instructions"),
                                 qc.ui(id="chat"),
                                 full_screen=True,
                             ),
@@ -771,6 +833,7 @@ app_ui = ui.page_fillable(
 
                         class_="main-inner",
                     ),
+                    value="ai_explorer",
                 ),
 
                 id="main_tabs",
@@ -851,6 +914,22 @@ def server(input, output, session):
             lbl("Dates:"),      pill(f"{start} → {end}"), sep(),
             lbl("Bar Chart Stat:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
             lbl("Map Metric:"), pill(MAP_METRICS[input.map_metric()]),
+        )
+
+    @render.ui
+    def ai_instructions():
+        style_label = AI_STYLE_CHOICES.get(input.ai_response_style() or "concise", "Concise Analyst")
+        return ui.div(
+            ui.span("How To Ask Better AI Questions", class_="ai-title"),
+            ui.div(f"Current response style: {style_label}"),
+            ui.tags.ul(
+                ui.tags.li("Be explicit about metric, location, and year range."),
+                ui.tags.li("For counts: ask \"How many ...\" and include filters."),
+                ui.tags.li("For ranking: ask for top/bottom N and the metric."),
+                ui.tags.li("Use follow-up prompts to tighten conditions."),
+            ),
+            ui.div("Examples: How many flood events occurred in India after 2020? | Which 5 countries had the highest economic loss in 2024? | Filter events where casualties > 1000 and aid < 10M USD."),
+            class_="ai-instructions",
         )
 
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
