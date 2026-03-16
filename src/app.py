@@ -1496,9 +1496,8 @@ def server(input, output, session):
     @reactive.effect
     @reactive.event(input.ai_response_style)
     def _update_prompt_for_style():
-        # Read the style value using isolate so this effect only fires when the
-        # dropdown changes, never during a running chat Extended Task.
-        style = reactive.isolate(lambda: input.ai_response_style()) or "concise"
+        # @reactive.event already isolates the body; read the input directly.
+        style = input.ai_response_style() or "concise"
         qc_vals.client.system_prompt = QC_BASE_SYSTEM_PROMPT + style_prompt_suffix(style)
 
     @render.ui
