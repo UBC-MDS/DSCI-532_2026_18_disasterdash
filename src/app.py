@@ -540,6 +540,29 @@ html, body, .bslib-page-fill {{
     color: {T_PRI};
 }}
 
+/* ── Prompt suggestion chips ── */
+.prompt-chips-wrap {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 12px 10px;
+}}
+.prompt-chip {{
+    background: #eef4ff;
+    border: 1px solid #b8d0f7;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.71rem;
+    color: #2d5fa6;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}}
+.prompt-chip:hover {{
+    background: #d4e6ff;
+    border-color: #5b97e8;
+}}
+
 /* ── CARDS ── */
 .card {{
     background: {CARD} !important;
@@ -730,7 +753,29 @@ label {{
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
 app_ui = ui.page_fillable(
-    ui.tags.head(ui.tags.style(CSS)),
+    ui.tags.head(
+        ui.tags.style(CSS),
+        ui.tags.script("""
+(function() {
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.prompt-chip');
+    if (!btn) return;
+    var prompt = btn.getAttribute('data-prompt');
+    if (!prompt) return;
+    // Shiny Chat textarea is inside the element with the chat id
+    var ta = document.querySelector('#chat textarea');
+    if (!ta) ta = document.querySelector('[id$="user-input"]');
+    if (!ta) return;
+    // Set value and dispatch events so the component registers the change
+    var nativeInput = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value');
+    nativeInput.set.call(ta, prompt);
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
+    ta.focus();
+  });
+})();
+"""),
+    ),
 
     # ── Page Header ────────────────────────────────────────────────────────────
     ui.div(
@@ -908,6 +953,7 @@ app_ui = ui.page_fillable(
                             ui.card(
                                 ui.card_header("💬  Ask a Question About the Data"),
                                 ui.output_ui("ai_instructions"),
+                                ui.output_ui("prompt_chips"),
                                 ui.output_ui("ai_query_status"),
                                 qc.ui(id="chat"),
                                 full_screen=True,
@@ -1038,8 +1084,31 @@ def server(input, output, session):
                 ui.tags.li("For filtered views, use verbs like show, filter, keep only, and include conditions."),
                 ui.tags.li("Ask follow-up questions to refine thresholds, dates, and regions."),
             ),
-            ui.div("Examples: How many flood events occurred in India after 2020? | Which 5 countries had the highest economic loss in 2024? | Filter events where casualties > 1000 and aid < 10M USD."),
             class_="ai-instructions",
+        )
+
+    @render.ui
+    def prompt_chips():
+        prompts = [
+            "How many flood events occurred in India after 2020?",
+            "Which 5 countries had the highest total economic loss in 2024?",
+            "Filter events where casualties > 1000 and aid < 10M USD.",
+            "Compare total aid for floods vs earthquakes since 2019.",
+            "Show only wildfires in Australia between 2021 and 2023.",
+            "What is the average economic loss per disaster type?",
+            "List countries where aid is below 30% of total losses.",
+            "Show all disasters in Bangladesh in 2022.",
+        ]
+        return ui.div(
+            *[
+                ui.tags.button(
+                    p,
+                    class_="prompt-chip",
+                    **{"data-prompt": p},
+                )
+                for p in prompts
+            ],
+            class_="prompt-chips-wrap",
         )
 
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
