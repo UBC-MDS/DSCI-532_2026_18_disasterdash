@@ -167,15 +167,17 @@ def style_prompt_suffix(style_key: str) -> str:
 
 # ── QueryChat Config ───────────────────────────────────────────────────────────
 # Uses Anthropic Claude (Haiku) for natural language dataframe queries
-# Requires ANTHROPIC_API_KEY set locally or in Posit Connect secrets
+# Requires ANTHROPIC_API_KEY set locally (via .env) or in Posit Connect secrets
 
 import chatlas, os as _os, sys as _sys
+from dotenv import load_dotenv as _load_dotenv
+_load_dotenv()  # loads .env from the working directory if present
 
 _anthropic_key = _os.getenv("ANTHROPIC_API_KEY")
 if not _anthropic_key:
     print(
         "\n❌  ANTHROPIC_API_KEY is not set.\n"
-        "   Add it to your .env or Posit Connect secrets.\n",
+        "   Add it to a .env file in the project root or Posit Connect secrets.\n",
         file=_sys.stderr,
     )
     _sys.exit(1)
