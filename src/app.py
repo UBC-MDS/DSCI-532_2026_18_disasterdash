@@ -959,8 +959,8 @@ app_ui = ui.page_fillable(
                                 ui.output_ui("prompt_chips"),
                                 ui.output_ui("ai_query_status"),
                                 ui.div(
-                                    qc.ui(id="chat"),
-                                    style="flex:1; min-height:0; overflow-y:auto;",
+                                    qc.ui(id="chat", height="100%", fill=True),
+                                    style="flex:1; min-height:0;",
                                 ),
                                 full_screen=True,
                                 style="display:flex; flex-direction:column; height:100%;",
