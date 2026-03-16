@@ -8,6 +8,7 @@ from shinywidgets import output_widget, render_widget
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import re
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.colors as pc
@@ -77,6 +78,41 @@ def fmt_num(v):
     if v >= 1e3:  return f"{v/1e3:.1f}K"
     return f"{v:,.0f}"
 
+
+def normalize_sql(query: str) -> str:
+    return query.strip().rstrip(";").strip()
+
+
+SQL_MUTATION_PATTERN = re.compile(
+    r"\b(drop|delete|truncate|insert|update|alter|create|replace|merge|grant|revoke)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def is_read_only_sql(query: str) -> bool:
+    q = normalize_sql(query)
+    if not q:
+        return False
+    if ";" in q:
+        return False
+    if SQL_MUTATION_PATTERN.search(q):
+        return False
+    q_lower = q.lower()
+    return q_lower.startswith("select") or q_lower.startswith("with")
+
+
+def is_count_intent(intent: str, query: str) -> bool:
+    text = f"{intent} {query}".lower()
+    count_terms = ("how many", "count", "number of", "total events", "total disasters")
+    return any(term in text for term in count_terms)
+
+
+def force_count_query(query: str) -> str:
+    q = normalize_sql(query)
+    if "count(" in q.lower():
+        return q
+    return f"SELECT COUNT(*) AS n FROM ({q}) AS count_subquery"
+
 # ── Constants ──────────────────────────────────────────────────────────────────
 COUNTRIES      = sorted(ISO3.keys())
 DISASTER_TYPES = [
@@ -94,6 +130,20 @@ AI_STYLE_CHOICES = {
     "policy_brief": "Policy Brief",
     "step_by_step": "Step-by-Step",
 }
+AI_STYLE_INSTRUCTIONS = {
+    "concise": (
+        "Write compact answers in 3 to 5 bullet points. Lead with the key result, "
+        "then include one short interpretation line."
+    ),
+    "policy_brief": (
+        "Write a policy brief style answer with sections: Finding, Policy Implication, "
+        "Recommended Action. Keep each section short and evidence-based."
+    ),
+    "step_by_step": (
+        "Explain the result step by step: filters applied, metric computed, and result "
+        "interpretation. Keep steps explicit and numbered."
+    ),
+}
 MAP_METRICS = {
     "disasters":    "Disaster Frequency",
     "coverage_pct": "Aid Coverage (%)",
@@ -107,6 +157,13 @@ QUESTION_MAP = {
     "casualties": "Where are disasters causing the greatest loss of life?",
 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
+DATASET_COLUMNS = [str(c) for c in df.columns]
+DATASET_COLUMNS_TEXT = ", ".join(DATASET_COLUMNS)
+
+
+def style_prompt_suffix(style_key: str) -> str:
+    rule = AI_STYLE_INSTRUCTIONS.get(style_key, AI_STYLE_INSTRUCTIONS["concise"])
+    return f"\n\nResponse style override for this session:\n{rule}"
 
 # ── QueryChat Config ───────────────────────────────────────────────────────────
 # Uses Anthropic Claude (Haiku) for natural language dataframe queries
@@ -123,21 +180,58 @@ if not _anthropic_key:
     )
     _sys.exit(1)
 
+AI_EXTRA_INSTRUCTIONS = f"""
+You are the Disaster Dash AI assistant for policy analysts studying disaster aid gaps.
+
+Dataset context:
+- Table name: global_disaster_response_2018_2024
+- Date coverage: 2018-01-01 to 2024-12-31
+- Available columns: {DATASET_COLUMNS_TEXT}
+
+User goal context:
+- Help users identify underfunded disaster responses.
+- Prioritize reliable, dataset-grounded evidence over generic claims.
+
+Tool usage rules:
+1) If the user asks for counts, totals, averages, rankings, percentages, or any numeric claim, run querychat_query before answering.
+2) If the user asks to filter or show a subset in dashboard visuals, run querychat_update_dashboard using a SELECT or WITH query.
+3) For requests that need both a numeric answer and dashboard filtering, run querychat_query first, then querychat_update_dashboard.
+4) Never provide invented numbers. If no tool result is available, say that and request clarification.
+
+SQL safety rules:
+- Use only SELECT or WITH statements.
+- Keep queries read-only.
+- Use only the known table and columns.
+
+Answer quality rules:
+- State the filters applied.
+- If query result is empty, explicitly say no rows matched and suggest broader filters.
+- Keep reasoning concise and tied to returned results.
+"""
+
+AI_GREETING = """Hi! I am your Disaster Dash AI assistant.
+
+Ask for filtered slices, counts, rankings, and comparisons. I will run dataset queries and then update the table and charts below.
+
+Try these examples:
+- "How many flood events occurred in India after 2020?"
+- "Show only earthquakes in Japan between 2021 and 2023."
+- "Which 5 countries had the highest total economic loss in 2024?"
+- "Filter events where casualties are greater than 1000 and aid is below 10 million USD."
+- "Compare total aid amount for floods vs hurricanes since 2019."
+- "What is the average response time for wildfires in Australia?"
+- "List countries where aid coverage is below 30 percent."
+- "Show disasters in Bangladesh in 2022 and summarize total loss and aid."
+"""
+
 qc = QueryChat(
     df,
     "global_disaster_response_2018_2024",
     client=chatlas.ChatAnthropic(model="claude-3-haiku-20240307", api_key=_anthropic_key),
-    greeting="""Hi! I'm your **Disaster Dash AI assistant** 🌍
-
-Ask me natural language questions to filter the disaster dataset. Try:
-- *"Show me only floods in India after 2020"*
-- *"Which country had the highest economic loss?"*
-- *"Filter to events with over 1000 casualties"*
-- *"Show earthquakes and hurricanes from 2022"*
-
-The table and charts below update automatically with your results.
-""",
+    extra_instructions=AI_EXTRA_INSTRUCTIONS,
+    greeting=AI_GREETING,
 )
+QC_BASE_SYSTEM_PROMPT = qc.system_prompt
 
 # ── Design Tokens ──────────────────────────────────────────────────────────────
 NAVY    = "#0b1f3a"
@@ -429,6 +523,19 @@ html, body, .bslib-page-fill {{
 }}
 .ai-instructions li {{
     margin: 2px 0;
+}}
+.ai-query-status {{
+    border: 1px dashed {BORDER};
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 0 12px 10px;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: {T_SEC};
+}}
+.ai-query-status strong {{
+    color: {T_PRI};
 }}
 
 /* ── CARDS ── */
@@ -799,6 +906,7 @@ app_ui = ui.page_fillable(
                             ui.card(
                                 ui.card_header("💬  Ask a Question About the Data"),
                                 ui.output_ui("ai_instructions"),
+                                ui.output_ui("ai_query_status"),
                                 qc.ui(id="chat"),
                                 full_screen=True,
                             ),
@@ -924,9 +1032,9 @@ def server(input, output, session):
             ui.div(f"Current response style: {style_label}"),
             ui.tags.ul(
                 ui.tags.li("Be explicit about metric, location, and year range."),
-                ui.tags.li("For counts: ask \"How many ...\" and include filters."),
-                ui.tags.li("For ranking: ask for top/bottom N and the metric."),
-                ui.tags.li("Use follow-up prompts to tighten conditions."),
+                ui.tags.li("For counts, rankings, and averages, include the exact measure to compute."),
+                ui.tags.li("For filtered views, use verbs like show, filter, keep only, and include conditions."),
+                ui.tags.li("Ask follow-up questions to refine thresholds, dates, and regions."),
             ),
             ui.div("Examples: How many flood events occurred in India after 2020? | Which 5 countries had the highest economic loss in 2024? | Filter events where casualties > 1000 and aid < 10M USD."),
             class_="ai-instructions",
@@ -1206,10 +1314,139 @@ def server(input, output, session):
     # Wire up querychat server.
     # Returns a dict: chat["df"]() → filtered dataframe, chat["sql"]() → SQL string
     qc_vals = qc.server(id="chat")
+
+    tool_audit = reactive.value([])
+    ai_runtime_status = reactive.value("Awaiting first AI query.")
+    ai_sync_status = reactive.value("No AI query has been executed yet.")
+
+    def _append_audit_entry(entry):
+        history = list(tool_audit.get() or [])
+        history.append(entry)
+        tool_audit.set(history[-40:])
+
+    def _tool_result_row_count(value):
+        if isinstance(value, list):
+            return len(value)
+        if isinstance(value, pd.DataFrame):
+            return int(value.shape[0])
+        return None
+
+    def _on_tool_request(request):
+        tool_name = request.name
+        args = dict(request.arguments) if isinstance(request.arguments, dict) else {}
+        original_query = str(args.get("query", ""))
+        final_query = original_query
+        transformed = False
+
+        if tool_name not in {
+            "querychat_query",
+            "querychat_update_dashboard",
+            "querychat_reset_dashboard",
+        }:
+            raise chatlas.ToolRejectError(f"Unsupported tool requested: {tool_name}")
+
+        if tool_name in {"querychat_query", "querychat_update_dashboard"}:
+            final_query = normalize_sql(original_query)
+            if not final_query:
+                raise chatlas.ToolRejectError("Tool request was rejected because SQL query was empty.")
+
+            if not is_read_only_sql(final_query):
+                raise chatlas.ToolRejectError(
+                    "Tool request was rejected because SQL must be read-only SELECT or WITH."
+                )
+
+            if tool_name == "querychat_query":
+                intent = str(args.get("_intent", ""))
+                if is_count_intent(intent, final_query):
+                    count_query = force_count_query(final_query)
+                    transformed = count_query != final_query
+                    final_query = count_query
+
+            args["query"] = final_query
+            request.arguments = args
+
+        ai_runtime_status.set(f"Validated tool request: {tool_name}")
+        _append_audit_entry(
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stage": "request",
+                "tool": tool_name,
+                "query_before": normalize_sql(original_query) if original_query else "",
+                "query_after": final_query,
+                "transformed": transformed,
+            }
+        )
+
+    def _on_tool_result(result):
+        tool_name = result.request.name if result.request is not None else "unknown"
+        row_count = _tool_result_row_count(result.value)
+        error_text = str(result.error) if result.error is not None else ""
+
+        if error_text:
+            ai_runtime_status.set(f"Tool error in {tool_name}: {error_text}")
+        elif row_count is None:
+            ai_runtime_status.set(f"Tool executed: {tool_name}")
+        else:
+            ai_runtime_status.set(f"Tool executed: {tool_name} ({row_count} rows returned)")
+
+        _append_audit_entry(
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stage": "result",
+                "tool": tool_name,
+                "rows": row_count,
+                "error": error_text,
+            }
+        )
+
+    qc_vals.client.on_tool_request(_on_tool_request)
+    qc_vals.client.on_tool_result(_on_tool_result)
+
+    @reactive.effect
+    def _update_prompt_for_style():
+        style = input.ai_response_style() or "concise"
+        qc_vals.client.system_prompt = QC_BASE_SYSTEM_PROMPT + style_prompt_suffix(style)
+
+    @render.ui
+    def ai_query_status():
+        sql_text = normalize_sql(qc_vals.sql() or "")
+        history = tool_audit.get() or []
+        last_event = history[-1] if history else None
+        last_event_text = "No tool call yet."
+        if last_event is not None:
+            stage = last_event.get("stage", "event")
+            tool_name = last_event.get("tool", "unknown")
+            rows = last_event.get("rows")
+            if rows is None:
+                last_event_text = f"{stage} -> {tool_name}"
+            else:
+                last_event_text = f"{stage} -> {tool_name} ({rows} rows)"
+
+        return ui.div(
+            ui.div(ui.tags.strong("Tool pipeline:"), f" {ai_runtime_status()}"),
+            ui.div(ui.tags.strong("Dataframe sync:"), f" {ai_sync_status()}"),
+            ui.div(ui.tags.strong("Active SQL:"), f" {sql_text if sql_text else 'None'}"),
+            ui.div(ui.tags.strong("Last event:"), f" {last_event_text}"),
+            class_="ai-query-status",
+        )
     
     @reactive.calc
     def ai_df():
         return qc_vals.df()
+
+    @reactive.effect
+    def _verify_ai_sync():
+        data = ai_df()
+        row_count = len(data) if hasattr(data, "__len__") else 0
+        has_sql = bool(normalize_sql(qc_vals.sql() or ""))
+        if has_sql:
+            ai_sync_status.set(
+                f"Verified shared ai_df with {row_count:,} rows. The AI table and both AI charts read this same filtered dataframe."
+            )
+        else:
+            ai_sync_status.set(
+                f"Current ai_df size: {row_count:,} rows. No persistent AI dashboard filter is active yet."
+            )
 
     # Filtered data table
     @render.data_frame
