@@ -146,7 +146,7 @@ These charts are computed using **sum aggregation** and update automatically bas
 
 ---
 
-## M3 AI Assistant Enhancements (Planned)
+## AI Assistant Enhancements (Planned)
 
 This section defines the next implementation changes for the AI Explorer experience. The focus is UI clarity, more reliable QueryChat behavior, stronger dataset-grounded answers, and explicit experiment-backed decision making.
 
