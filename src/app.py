@@ -766,12 +766,13 @@ app_ui = ui.page_fillable(
     var chatInput = document.querySelector('shiny-chat-input');
     if (!chatInput) return;
     if (typeof chatInput.setInputValue === 'function') {
-      chatInput.setInputValue(prompt, {focus: true});
+      chatInput.setInputValue(prompt, {submit: true});
     } else {
       var ta = chatInput.querySelector('textarea');
       if (!ta) return;
       ta.value = prompt;
       ta.dispatchEvent(new Event('input', {bubbles: true}));
+      ta.dispatchEvent(new Event('change', {bubbles: true}));
       ta.focus();
     }
   });
