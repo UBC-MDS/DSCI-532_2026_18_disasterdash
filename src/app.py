@@ -762,16 +762,18 @@ app_ui = ui.page_fillable(
     if (!btn) return;
     var prompt = btn.getAttribute('data-prompt');
     if (!prompt) return;
-    // Shiny Chat textarea is inside the element with the chat id
-    var ta = document.querySelector('#chat textarea');
-    if (!ta) ta = document.querySelector('[id$="user-input"]');
-    if (!ta) return;
-    // Set value and dispatch events so the component registers the change
-    var nativeInput = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value');
-    nativeInput.set.call(ta, prompt);
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
-    ta.dispatchEvent(new Event('change', { bubbles: true }));
-    ta.focus();
+    // shiny-chat-input renders into itself (no shadow DOM) and exposes setInputValue()
+    var chatInput = document.querySelector('shiny-chat-input');
+    if (!chatInput) return;
+    if (typeof chatInput.setInputValue === 'function') {
+      chatInput.setInputValue(prompt, {focus: true});
+    } else {
+      var ta = chatInput.querySelector('textarea');
+      if (!ta) return;
+      ta.value = prompt;
+      ta.dispatchEvent(new Event('input', {bubbles: true}));
+      ta.focus();
+    }
   });
 })();
 """),
