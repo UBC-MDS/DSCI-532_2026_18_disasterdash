@@ -59,6 +59,7 @@ To run the dashboard locally, you must provide an Anthropic API key.
 
 ```bash
 touch .env
+nano .env
 ```
 
 - Add your API key to the file:
@@ -76,11 +77,13 @@ The `.env` file is listed in `.gitignore` and should **never be committed to the
 
 5. Run the dashboard
 
+Because the application imports modules from the `src/` directory, you must set the Python path when running locally:
+
 ```bash
-shiny run src/app.py
+PYTHONPATH=. shiny run src/app.py
 ```
 
-6. Open your browser to the URL shown in the terminal.
+6. Open your browser to the URL shown in the terminal (typically http://localhost:8000).
 
 
 ## Running Tests
@@ -93,7 +96,17 @@ The test suite verifies core dashboard behaviors including filtering logic, aggr
 playwright install
 ```
 
-2) Run all tests:
+2) Start the dashboard:
+
+The Playwright tests interact with the running dashboard, so the app must be up and running before executing the tests. 
+
+```bash
+PYTHONPATH=. shiny run src/app.py
+```
+
+3) Run the tests:
+
+Open a second terminal from the project root with the `disaster-dash` environment activated.
 
 ```bash 
 pytest
