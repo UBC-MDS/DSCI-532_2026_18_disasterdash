@@ -282,13 +282,16 @@ Planned notebook sections:
   - Response clarity from manual rubric
 5. Final option selection and narrative motivation
 
-### Decision Summary Template (To Fill After Experiments)
+Experiment outcome summary (recorded in `notebooks/ai_assistant_experiments.ipynb`):
+- Prompt strategy with schema + user goal + strict tool rules outperformed baseline behavior on numeric reliability and tool consistency.
+- `on_tool_request` validation + transformation outperformed validate-only and no-hook variants for count-query reliability while preserving read-only SQL safety.
+- Response-style dropdown provided clearer user-facing behavior differences than verbosity-only or scope-toggle alternatives.
+
+### Decision Summary (Experiment-Backed)
 
 | Decision area | Options tested | Selected option | Motivation summary (experiment-backed) |
 |---------------|----------------|-----------------|----------------------------------------|
-| Prompt context strategy | Baseline / schema-only / schema+goal+tool-rules | TBD | TBD |
-| Tool interception policy | None / validate / validate+transform | TBD | TBD |
-| User-facing LLM control | Verbosity slider / response style dropdown / scope toggle | TBD | TBD |
-| AI tab visibility behavior | CSS hide / conditional render | TBD | TBD |
-
-After experiments are completed, this table must be updated with final selections and concise evidence-based rationale.
+| Prompt context strategy | Baseline / schema-only / schema+goal+tool-rules | Schema + goal + strict tool rules | Highest combined reliability for numeric answers and consistent tool invocation on data-specific questions. |
+| Tool interception policy | None / validate / validate+transform | Validate + transform (`on_tool_request`) | Best balance of SQL safety and successful handling of ambiguous count requests through query normalization. |
+| User-facing LLM control | Verbosity slider / response style dropdown / scope toggle | Response style dropdown | Most interpretable control for users and clearest response-format differences without affecting query correctness. |
+| AI tab visibility behavior | CSS hide / conditional render | Tab-aware conditional rendering | Cleaner mode separation: overview controls are hidden in AI mode and restored in overview mode with minimal reactivity risk. |
