@@ -513,6 +513,16 @@ html, body, .bslib-page-fill {{
     line-height: 1.35;
     color: {T_SEC};
 }}
+.ai-instructions .ai-expand-note {{
+    display: block;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    border: 1px solid #f0d9a7;
+    background: #fff8ea;
+    border-radius: 8px;
+    color: #7a5a1c;
+    font-weight: 600;
+}}
 .ai-instructions .ai-title {{
     display: block;
     font-weight: 700;
@@ -1083,6 +1093,10 @@ def server(input, output, session):
     def ai_instructions():
         style_label = AI_STYLE_CHOICES.get(input.ai_response_style() or "concise", "Concise Analyst")
         return ui.div(
+            ui.span(
+                "Tip: For the clearest view of full AI replies and query outputs, click Expand on this chat card.",
+                class_="ai-expand-note",
+            ),
             ui.span("How To Ask Better AI Questions", class_="ai-title"),
             ui.div(f"Current response style: {style_label}"),
             ui.tags.ul(
