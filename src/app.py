@@ -1390,10 +1390,13 @@ def server(input, output, session):
     ai_runtime_status = reactive.value("Awaiting first AI query.")
     ai_sync_status = reactive.value("No AI query has been executed yet.")
 
+    # Plain Python lists/dicts for collecting data inside the Extended Task
+    # (reactive values cannot be read or written inside Extended Tasks).
+    _pending_audit: list = []
+    _pending_status: list = []  # holds at most the latest status string
+
     def _append_audit_entry(entry):
-        history = list(tool_audit.get() or [])
-        history.append(entry)
-        tool_audit.set(history[-40:])
+        _pending_audit.append(entry)
 
     def _tool_result_row_count(value):
         if isinstance(value, list):
@@ -1436,7 +1439,8 @@ def server(input, output, session):
             args["query"] = final_query
             request.arguments = args
 
-        ai_runtime_status.set(f"Validated tool request: {tool_name}")
+        _pending_status.clear()
+        _pending_status.append(f"Validated tool request: {tool_name}")
         _append_audit_entry(
             {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1454,12 +1458,14 @@ def server(input, output, session):
         error_text = str(result.error) if result.error is not None else ""
 
         if error_text:
-            ai_runtime_status.set(f"Tool error in {tool_name}: {error_text}")
+            status = f"Tool error in {tool_name}: {error_text}"
         elif row_count is None:
-            ai_runtime_status.set(f"Tool executed: {tool_name}")
+            status = f"Tool executed: {tool_name}"
         else:
-            ai_runtime_status.set(f"Tool executed: {tool_name} ({row_count} rows returned)")
+            status = f"Tool executed: {tool_name} ({row_count} rows returned)"
 
+        _pending_status.clear()
+        _pending_status.append(status)
         _append_audit_entry(
             {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1473,9 +1479,26 @@ def server(input, output, session):
     qc_vals.client.on_tool_request(_on_tool_request)
     qc_vals.client.on_tool_result(_on_tool_result)
 
+    # Flush pending tool data into reactive values after each chat turn completes.
+    # qc_vals.df() changes whenever QueryChat finishes a turn — use it as the trigger.
     @reactive.effect
+    def _flush_tool_state():
+        qc_vals.df()  # invalidate whenever a new AI result is available
+        if _pending_status:
+            ai_runtime_status.set(_pending_status[-1])
+            _pending_status.clear()
+        if _pending_audit:
+            history = list(tool_audit.get() or [])
+            history.extend(_pending_audit)
+            tool_audit.set(history[-40:])
+            _pending_audit.clear()
+
+    @reactive.effect
+    @reactive.event(input.ai_response_style)
     def _update_prompt_for_style():
-        style = input.ai_response_style() or "concise"
+        # Read the style value using isolate so this effect only fires when the
+        # dropdown changes, never during a running chat Extended Task.
+        style = reactive.isolate(lambda: input.ai_response_style()) or "concise"
         qc_vals.client.system_prompt = QC_BASE_SYSTEM_PROMPT + style_prompt_suffix(style)
 
     @render.ui
