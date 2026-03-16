@@ -958,9 +958,12 @@ app_ui = ui.page_fillable(
                                 ui.output_ui("ai_instructions"),
                                 ui.output_ui("prompt_chips"),
                                 ui.output_ui("ai_query_status"),
-                                qc.ui(id="chat"),
+                                ui.div(
+                                    qc.ui(id="chat"),
+                                    style="flex:1; min-height:0; overflow-y:auto;",
+                                ),
                                 full_screen=True,
-                                fill=True,
+                                style="display:flex; flex-direction:column; height:100%;",
                             ),
                             ui.card(
                                 ui.card_header("📋  Filtered Results"),
@@ -970,11 +973,9 @@ app_ui = ui.page_fillable(
                                     "⬇  Download CSV",
                                 ),
                                 full_screen=True,
-                                fill=True,
                             ),
                             col_widths=[5, 7],
-                            style="min-height:520px; gap:14px;",
-                            fill=True,
+                            style="height:600px; gap:14px;",
                         ),
 
                         # Row 2: Two charts driven by AI-filtered data
