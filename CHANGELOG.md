@@ -1,5 +1,70 @@
 # CHANGELOG 
 
+## [0.4.0] - 2026-03-15
+
+### Added
+
+- **AI tab conditional rendering:** sidebar filter controls and the active filter strip are now hidden when the AI Explorer tab is active and restored when returning to the Overview tab (`ui.panel_conditional` keyed on `input.main_tabs`).
+- **AI response style control:** added `ai_response_style` dropdown (`Concise Analyst` / `Policy Brief` / `Step-by-Step`) in the AI sidebar; changes live-update the QueryChat system prompt via `_update_prompt_for_style()` reactive effect.
+- **Strengthened system prompt:** `AI_EXTRA_INSTRUCTIONS` injects full column schema, dataset date range, user-goal framing ("policy analyst studying aid gaps"), and explicit tool-use rules (tool call required for all count/filter/rank queries; no fabricated numbers).
+- **Improved AI greeting and examples:** `AI_GREETING` contains 8 intent-diverse example prompts covering count, filter, compare, rank, and trend questions.
+- **Improved in-tab usage instructions:** `ai_instructions()` render function shows style-aware usage tips and explains how results propagate to the data table and charts below the chat.
+- **`on_tool_request` interception:** `_on_tool_request()` enforces an allowlist of permitted tool names, blocks SQL mutation statements (DROP/INSERT/UPDATE/DELETE/ALTER/CREATE), and transforms ambiguous "how many" queries to `SELECT COUNT(*)` via `force_count_query()`.
+- **Tool result auditing:** `_on_tool_result()` logs each tool response (row count, success/error) into `tool_audit` reactive value; `ai_query_status` panel in the AI tab surfaces the last tool event, active SQL, and dataframe sync status.
+- **Dataframe synchronisation verification:** `_verify_ai_sync()` reactive effect compares `ai_df()` row count against the active SQL from `qc_vals.sql()` and sets `ai_sync_status` warning when they diverge.
+- **SQL helper utilities:** `normalize_sql()`, `is_read_only_sql()`, `is_count_intent()`, `force_count_query()` added as standalone pure functions for testability.
+- **Experiments notebook:** `notebooks/ai_assistant_experiments.ipynb` — 9 cells covering 3 experiments (prompt strategy, tool interception policy, user-facing control), each with scoring criteria, weighted score tables, and narrative motivation for the selected option.
+- **Spec decision table:** `reports/m2_spec.md` updated with experiment-backed "Decision Summary" table recording the selected option and motivation for all four design dimensions.
+- **Auto-load `.env` at startup:** `load_dotenv()` (python-dotenv) called before the API key check so developers can store `ANTHROPIC_API_KEY` in a gitignored `.env` file instead of exporting it in every shell session.
+- **ibis-framework installed:** added `ibis-framework[duckdb]` to the environment so the app can start (`ibis` was missing from the `disaster-dash` conda environment despite being used in the data-loading layer).
+
+### Changed
+
+- Migrated AI backend from GROQ to **Anthropic Claude Haiku** (`claude-3-haiku-20240307`) via `chatlas.ChatAnthropic`; environment variable changed from `GROQ_API_KEY` to `ANTHROPIC_API_KEY`.
+- `QC_BASE_SYSTEM_PROMPT` now captures QueryChat's default prompt at startup so style overrides can append to it rather than replace it entirely, preserving QueryChat's built-in tool descriptions.
+- Addressed: AI Explorer tab shows non-AI sidebar controls and filter strip when on the AI tab — resolved by `ui.panel_conditional` wrapping the overview sidebar section and the `filter_strip` row.
+- Addressed: AI assistant produces hallucinated numeric answers — resolved via `AI_EXTRA_INSTRUCTIONS` strict tool-use rules and `_on_tool_request` count-query transformation.
+- Addressed: No user control over AI response style — resolved by `ai_response_style` dropdown and `_update_prompt_for_style()`.
+- Addressed: Design decisions lacked documented experiment rationale — resolved by `notebooks/ai_assistant_experiments.ipynb` and the spec decision table.
+
+### Fixed
+
+- Startup crash when `ANTHROPIC_API_KEY` is not exported in the shell — fixed by calling `load_dotenv()` before the key check so `.env` is read automatically.
+- Argument ordering `SyntaxError` in `ui.nav_panel` call introduced during initial AI tab wiring — corrected before commit `529d814`.
+
+### Known Issues
+
+- The app requires `ANTHROPIC_API_KEY` to start; without it the process exits immediately. There is no graceful degradation mode that allows the Overview tab to function without the AI key.
+- `_verify_ai_sync()` logs a mismatch warning when the user has not yet run any AI query (initial state: `ai_df` is the full dataset, `qc_vals.sql()` is empty). This is a false-positive on first load.
+- The experiments notebook contains manually recorded scores (no automated re-run harness); scores are representative of observed behaviour during development, not a reproducible benchmark suite.
+- Demo GIF in README is still from M3 and does not show the AI tab enhancements.
+
+### Release Highlight: AI Explorer Tab — Enhanced Conversational Data Analysis
+
+The AI Explorer tab allows policy analysts to ask natural-language questions about the global disaster aid dataset (2018–2024) and receive grounded, reproducible answers backed by live DuckDB queries. This milestone hardened the AI layer: the system prompt now gives the LLM full schema context and strict tool-use rules, a response style dropdown lets users switch between concise, policy-brief, and step-by-step formats, and an `on_tool_request` interceptor both validates SQL safety and transforms ambiguous count queries into explicit `SELECT COUNT(*)` calls. The result is an assistant that answers "how many flood events occurred in India after 2020?" with an actual database count rather than a hallucinated number.
+
+- **Option chosen:** Option D (AI-powered natural language querying with QueryChat + chatlas)
+- **PR:** `ai_tab` branch → commits `529d814`, `062ee57`, `72f024a`, `9de62b8`, `ccfa07d`
+- **Why this option over the others:** Options A–C were conventional filter or chart extensions. Option D adds a fundamentally different analysis mode — natural-language SQL generation against the live dataset — that supports open-ended policy questions the fixed filter UI cannot express. The experiment notebook (`notebooks/ai_assistant_experiments.ipynb`) documents why the strengthened system prompt and `on_tool_request` transform were selected over simpler alternatives.
+- **Feature prioritization issue link:** <!-- link to your feature prioritization issue -->
+
+### Collaboration
+
+This milestone focused on improving documentation discipline and reducing large-batch commits. The `ai_tab` branch used six focused commits rather than a single integration PR, each scoped to one logical change (UI changes, prompt/server logic, notebook, spec, dotenv fix). All design decisions were recorded in the spec before implementation.
+
+- **CONTRIBUTING.md:** Updated during M3 with Milestone 3 retrospective and Milestone 4 collaboration norms (atomic PRs, design-before-code, consistent peer review, clear PR descriptions). See commit history on `main`.
+- **M3 retrospective:** After M3 collaboration feedback we identified that large integration PRs and spec lag were the main friction points. We addressed both: specs are now updated alongside code changes, and the M4 feature branch uses commit-per-logical-unit rather than one large merge commit.
+- **M4:** Applied design-before-code discipline — the spec's "AI Assistant Enhancements" section was written first, then each feature was implemented and immediately committed with a reference message, keeping the spec and code in sync throughout.
+
+### Reflection
+
+Disaster Dash successfully communicates the global disaster aid gap story at a glance: the choropleth, KPI cards, and bar charts give policy analysts an immediate comparative view across countries, disaster types, and years. The AI Explorer adds an open-ended layer for questions the fixed filter UI cannot express. Current limitations include dataset coverage (only surveyed countries, only through 2024), the lack of trend/time-series charts on the Overview tab, and the hard dependency on an Anthropic API key at startup. We intentionally omit statistical uncertainty bands on bar aggregates — the dataset is a survey sample, not a census, but adding confidence intervals would require assumptions about the sampling design we cannot verify from the raw data alone.
+
+The biggest trade-off this milestone was depth over breadth: we invested heavily in making the AI layer reliable (prompt engineering, tool interception, sync verification) rather than adding new chart types. Full rationale is in `notebooks/ai_assistant_experiments.ipynb` and the Decision Summary table in `reports/m2_spec.md`.
+
+The most formative materials this milestone were the chatlas/QueryChat documentation (understanding `on_tool_request` hook semantics) and the in-class discussion of prompt engineering for structured outputs. We would have benefited from earlier coverage of how to test LLM-backed components in a reactive Shiny context — there is currently no automated test harness for the AI tab's tool interception logic.
+
+
 ## [0.3.0] - 2026-03-08
 
 ## Added:
