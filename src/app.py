@@ -152,6 +152,34 @@ def style_prompt_suffix(style_key: str) -> str:
     rule = AI_STYLE_INSTRUCTIONS.get(style_key, AI_STYLE_INSTRUCTIONS["concise"])
     return f"\n\nResponse style override for this session:\n{rule}"
 
+# ── Global KPI Baselines ─────────────────────────────────────────────
+
+# funding gap per disaster event
+df["gap"] = df["economic_loss_usd"] - df["aid_amount_usd"]
+
+# baseline for KPI 1: average disaster funding gap globally
+GLOBAL_GAP_PER_EVENT = df["gap"].mean()
+
+# baseline for KPI 2: disaster burden relative to GDP
+country_baseline = (
+    df.groupby("country")
+      .agg(
+          loss=("economic_loss_usd", "sum"),
+          aid=("aid_amount_usd", "sum")
+      )
+      .reset_index()
+)
+
+country_baseline["gap"] = country_baseline["loss"] - country_baseline["aid"]
+country_baseline["gdp"] = country_baseline["country"].map(GDP)
+
+country_baseline["gap_pct_gdp"] = (
+    country_baseline["gap"] / country_baseline["gdp"]
+) * 100
+
+# global median disaster burden
+GLOBAL_GAP_MEDIAN = country_baseline["gap_pct_gdp"].median()
+
 # ── QueryChat Config ───────────────────────────────────────────────────────────
 # Uses Anthropic Claude (Haiku) for natural language dataframe queries
 # Requires ANTHROPIC_API_KEY set locally (via .env) or in Posit Connect secrets
@@ -1124,7 +1152,7 @@ def server(input, output, session):
 
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
     @reactive.calc
-    def filtered_df():
+    def filtered_query():
         c = ibis._
         expr = disaster_table
 
@@ -1140,6 +1168,10 @@ def server(input, output, session):
         expr = expr.filter(c.date.between(start, end))
 
         return expr
+    
+    @reactive.calc
+    def filtered_df():
+        return filtered_query().execute()
 
     # ── Empty figure helper ───────────────────────────────────────────────────
     def _empty_fig(msg="No data to display", hint="Adjust your filters"):
@@ -1163,16 +1195,30 @@ def server(input, output, session):
     # ── KPI Grid ──────────────────────────────────────────────────────────────
     @render.ui
     def kpi_grid():
-        data = filtered_df().execute()
+        data = filtered_df()
         if data.empty:
             gap_dollar_val = "-"
             gap_pct_val = "-"
+            gap_subtitle = ""
+            gap_pct_subtitle = ""
         else:
-            # Total Funding Gap
-            total_loss    = data["economic_loss_usd"].sum()
-            total_aid     = data["aid_amount_usd"].sum()
-            total_gap     = total_loss - total_aid
-            gap_dollar_val = fmt_currency(total_gap)
+            # ── KPI 1: Average Funding Gap per Disaster ───────────────────
+
+            gap_per_event = (data["economic_loss_usd"] - data["aid_amount_usd"]).mean()
+            gap_dollar_val = fmt_currency(gap_per_event)
+            if GLOBAL_GAP_PER_EVENT != 0:
+                gap_delta = (
+                    (gap_per_event - GLOBAL_GAP_PER_EVENT)
+                    / GLOBAL_GAP_PER_EVENT
+                ) * 100
+            else:
+                gap_delta = 0
+            gap_arrow = "▲" if gap_delta > 0 else "▼"
+            gap_color = RED if gap_delta > 0 else GREEN
+            direction = "higher" if gap_delta > 0 else "lower"
+            gap_subtitle = ui.HTML(
+                f"<span style='color:{gap_color}'>{gap_arrow} {abs(gap_delta):.1f}% {direction}</span> than global average"
+            )
             # GDP Normalized Median Gap (%)
             agg = (
                 data.groupby("country").agg(
@@ -1189,6 +1235,14 @@ def server(input, output, session):
                 agg["gap_pct_gdp"] = (agg["gap"]/agg["gdp"])*100
                 median_gap_pct = agg["gap_pct_gdp"].median()
                 gap_pct_val = f"{median_gap_pct:.2f}%"
+                pct_delta = median_gap_pct - GLOBAL_GAP_MEDIAN
+                pct_arrow = "▲" if pct_delta > 0 else "▼"
+                pct_color = RED if pct_delta > 0 else GREEN
+                direction = "higher" if pct_delta > 0 else "lower"
+                gap_pct_subtitle = ui.HTML(
+                    f"<span style='color:{pct_color}'>{pct_arrow} {abs(pct_delta):.2f}% {direction}</span> than global median"
+                )
+
 
         def kpi_box(cls, value, title, subtitle=None, formula=None):
             return ui.div(
@@ -1202,14 +1256,14 @@ def server(input, output, session):
         return ui.div(
             kpi_box("kpi-gap",
                      gap_dollar_val, 
-                     "Total Unfunded Disaster Losses", 
-                     "Disaster losses not covered by aid",
-                     "Loss - Aid", 
+                     "Average Unfunded Loss per Disaster", 
+                     gap_subtitle,
+                     "mean(Loss - Aid)", 
                      ),
             kpi_box("kpi-coverage", 
                     gap_pct_val, 
                     "Disaster Burden (% of GDP)",
-                    "Typical funding gap relative to GDP", 
+                    gap_pct_subtitle,
                     "Median((Loss − Aid) ÷ GDP)", 
                     ),
             class_="kpi-grid",
@@ -1221,7 +1275,7 @@ def server(input, output, session):
     # ── Choropleth Map ────────────────────────────────────────────────────────
     @render_widget
     def map_plot():
-        data   = filtered_df().execute()
+        data   = filtered_df()
         metric = input.map_metric()
 
         if data.empty:
@@ -1321,7 +1375,19 @@ def server(input, output, session):
         return fig
 
     # ── Overview Bar Chart Helper ─────────────────────────────────────────────
-    def _build_bar_fig(grp, column, y_label, annotations=None):
+    def _make_bar(column, y_label):
+        data = filtered_df()
+        if data.empty:
+            return _empty_fig("No data to display", "Select countries and disaster types to view")
+
+        stat     = input.summary_stat()
+        stat_lbl = SUMMARY_CHOICES[stat]
+        grp = (
+            data.groupby("disaster_type")[column]
+            .agg(stat).reset_index()
+            .sort_values(column, ascending=False)
+        )
+        grp["fmt"] = grp[column].apply(fmt_currency)
         n       = len(grp)
         palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
 
