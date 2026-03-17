@@ -92,15 +92,19 @@ flowchart TD
 
 ### KPI Calculations
 
-### `kpi_grid` — Total Unfunded Disaster Losses
-- **Formula:** `sum(economic_loss_usd) - sum(aid_amount_usd)`
-- **Meaning:** Represents the total disaster-related economic loss not covered by humanitarian aid across the filtered selection.
+### `kpi_grid` — Average Unfunded Loss per Disaster
+- **Formula:** `mean(loss − aid)` where `loss = economic_loss_usd` and `aid = aid_amount_usd`
+- **Meaning:** Represents the typical funding gap per disaster event within the filtered selection.
+- **Baseline comparison:** The filtered value is compared to the **global historical average disaster funding gap**, computed as the mean disaster funding gap across all disaster events in the dataset (2018–2024).
 
 ### `kpi_grid` — Disaster Burden (% of GDP)
 - **Formula:** `median((economic_loss_usd - aid_amount_usd) / GDP × 100)` computed at the country level.
 - **Meaning:** Represents the typical disaster funding gap relative to a country's economic size, allowing comparison between large and small economies.
+- **Baseline comparison:** The filtered value is compared to the **global median disaster burden**, computed as the median country-level disaster burden across all countries in the dataset (2018–2024).
 
-Both KPIs always use **sum aggregation** for loss and aid regardless of the `summary_stat` selection used in the bar charts.
+These KPI calculations are independent of the `summary_stat` selection used in the bar charts. The first KPI computes the **average disaster funding gap**, while the second KPI computes the **median disaster burden relative to GDP**.
+
+The dashboard displays ▲ or ▼ indicators to show whether the selected disasters exhibit **larger or smaller funding gaps relative to global historical baselines**.
 
 ### Map Aggregation (inline)
 - **Depends on:** `filtered_df`, `map_metric`
