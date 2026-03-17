@@ -164,3 +164,155 @@ The AI Explorer tab produces:
   - Aid amount by disaster type
 
 These charts are computed using **sum aggregation** and update automatically based on the AI-filtered dataset.
+
+---
+
+## AI Assistant Enhancements (Planned)
+
+This section defines the next implementation changes for the AI Explorer experience. The focus is UI clarity, more reliable QueryChat behavior, stronger dataset-grounded answers, and explicit experiment-backed decision making.
+
+### Planned User Stories
+
+| # | Job Story | Status | Notes |
+|---|-----------|--------|-------|
+| 6 | When I switch to AI Explorer, I want non-AI dashboard controls hidden so I can focus on conversational analysis without irrelevant filter noise. | Planned | Hide sidebar controls and filter summary strip on AI tab only. |
+| 7 | When I ask data-specific questions (counts, top-N, filters), I want the assistant to execute dataset queries before answering so I can trust numerical results. | Planned | Enforced through prompt rules and `on_tool_request` checks. |
+| 8 | When I use the AI assistant, I want clearer prompts and examples so I can ask effective questions and get useful results quickly. | Planned | Improve greeting, examples, and interaction instructions. |
+| 9 | When I prefer a specific answer style, I want a UI control that changes AI behavior so responses match my analysis needs. | Planned | Add one user-facing LLM behavior control (e.g., response style). |
+
+### Requirement Traceability
+
+| Requirement | Planned implementation | Acceptance criteria |
+|-------------|------------------------|---------------------|
+| Hide sidebar filters when AI tab is active | Add a tab-aware reactive condition keyed on `main_tabs` to hide sidebar sections in AI mode and show in Overview mode. | Sidebar filter controls are not visible in AI Explorer; they reappear when returning to Overview. |
+| Hide filter summary strip when AI tab is active | Render `filter_strip` conditionally only for Overview tab, or hide with tab-scoped CSS class. | Active filter strip is absent in AI Explorer and present in Overview. |
+| Improve system prompt context | Override QueryChat system prompt (or parts) with dataset schema, metric definitions, valid date span (2018-2024), and user goal framing (aid gap analysis). | Prompt includes explicit dataset context, user role context, and answer constraints. |
+| Provide clearer example questions | Replace examples with intent-diverse, unambiguous prompts (count, filter, compare, rank, trend). | AI panel shows at least 6 examples that map to distinct analysis intents. |
+| Improve instructions for interacting with AI assistant | Add concise usage instructions above chat (how to ask, what to avoid, how results propagate to table/charts). | New instruction block is visible and references the data table/charts update behavior. |
+| Improve QueryChat prompt for consistent tool usage | Add explicit prompt rule: tool execution required for count/filter/rank questions; no fabricated numbers. | For numeric/filter queries, a tool call occurs before final answer in test runs. |
+| Ensure dataset queries execute for counts/filtered requests | Add intent classification in prompt + `on_tool_request` validation and fallback coercion for count/filter intents. | Questions like "How many..." or "Show events where..." always trigger dataset query execution. |
+| Verify tool calls update filtered dataframe for visuals | Keep `ai_df` as single source of truth from QueryChat tool outputs; add verification checks and logs for tool result -> `ai_df` -> table/charts chain. | AI table and both AI charts refresh from the same filtered frame after each successful tool call. |
+| Override system prompt with meaningful context | Implement prompt-template builder that injects schema, glossary, and behavioral rules. | Prompt template is centralized and testable. |
+| Use `on_tool_request` to validate/log/transform calls | Intercept tool requests to enforce read-only SQL, normalize count queries, and log requests/results metadata. | Invalid tool requests are blocked or transformed; logs capture request intent and row counts. |
+| Add user-facing control affecting LLM behavior | Add `ai_response_style` input (`concise`, `policy_brief`, `step_by_step`) and pass selection into prompt context. | Changing control visibly changes response style while keeping data logic unchanged. |
+| Base decisions on experimentation and document rationale | Add experiment notebook and summarize option choices + motivation in this spec. | Notebook exists in `notebooks/` and this spec contains final decision summaries after experiments. |
+
+### Planned Component Additions
+
+| ID | Type | Shiny widget / renderer | Depends on | Purpose |
+|----|------|-------------------------|------------|---------|
+| `main_tabs` | Input | `ui.navset_underline(..., id="main_tabs")` | -- | Detect active tab state for conditional UI rendering. |
+| `ai_response_style` | Input | `ui.input_select()` | -- | User-facing control for LLM response behavior. |
+| `ai_instructions` | Output | `@render.ui` | `ai_response_style` (optional) | Show improved interaction guidance and examples. |
+| `is_ai_tab` | Reactive calc | `@reactive.calc` | `main_tabs` | Source of truth for AI-tab visibility toggles. |
+| `chat_system_prompt` | Reactive calc | Prompt builder function | `ai_response_style` | Builds final QueryChat system prompt context. |
+| `tool_request_audit` | Reactive value/log | `reactive.Value` or append-only list | `on_tool_request` events | Store tool request metadata for debugging and validation. |
+| `ai_query_status` | Output (optional) | `@render.ui` | tool logs / `ai_df` | Expose last query execution status to user. |
+
+### QueryChat Prompt Override Specification
+
+The system prompt will be upgraded from a generic helper prompt to a domain-specific template with these sections:
+
+1. Dataset context
+- Table name and schema summary (country, date, disaster_type, casualties, economic_loss_usd, aid_amount_usd, etc.)
+- Time coverage: 2018-01-01 to 2024-12-31
+- Domain framing: global disaster aid adequacy analysis
+
+2. User goal context
+- User is a policy analyst comparing losses, aid, and funding gaps
+- Prioritize transparent, reproducible, dataset-grounded responses
+
+3. Tool-use policy
+- If user asks for count, ranking, filtered records, or any numeric claim, run dataset query tools before answering
+- Never fabricate counts, percentages, or top-N claims
+- If query returns no rows, state that explicitly and suggest a broader filter
+
+4. Response policy
+- Respect `ai_response_style`
+- Provide brief interpretation after numeric outputs
+- Reference filters used in the final answer
+
+### `on_tool_request` Interception Plan
+
+`on_tool_request` will be used to validate, log, and (when safe) transform tool requests before execution.
+
+Validation rules:
+- Allow read-only query patterns only (no DDL/DML)
+- Ensure referenced table/columns are within the known dataset schema
+- Require explicit aggregation for count-style intents (`COUNT(*) AS n`)
+
+Transformation rules:
+- Normalize count prompts to explicit aggregate query shape when ambiguous
+- Attach metadata tags (intent, style mode, timestamp) for audit logs
+
+Logging rules:
+- Store original request, transformed request (if any), execution success/failure, and returned row count
+- Keep lightweight in-memory logs for runtime verification and optional debugging output
+
+### AI Tab UX Behavior
+
+When AI Explorer is active:
+- Hide sidebar filters and sidebar action buttons
+- Hide active filter strip
+- Keep AI chat, AI data table, CSV download, and AI charts visible
+
+When Overview is active:
+- Restore existing sidebar filter controls and active filter strip
+
+### Planned AI Example Question Bank
+
+The AI greeting/help text will include clear, concrete examples that span the major query intents:
+
+- "How many flood events occurred in India after 2020?"
+- "Show only earthquakes in Japan between 2021 and 2023."
+- "Which 5 countries had the highest total economic loss in 2024?"
+- "Filter events where casualties are greater than 1000 and aid is below 10 million USD."
+- "Compare total aid amount for floods vs hurricanes since 2019."
+- "What is the average response time for wildfires in Australia?"
+- "List countries where aid coverage is below 30 percent."
+- "Show disasters in Bangladesh in 2022 and summarize total loss and aid."
+
+### Dataset Execution and Synchronization Rules
+
+Execution rules:
+- Count/filter/top/bottom/"which country has"/"show events" questions must execute tool queries
+- Conceptual questions (e.g., "what does aid coverage mean?") may answer directly without data query
+
+Synchronization rules:
+- Tool result dataframe is the only source for `ai_df`
+- `ai_table`, `ai_bar_loss`, and `ai_bar_aid` must all consume `ai_df`
+- Failed tool calls must not silently reuse stale data without warning
+
+Verification checks:
+- Log row counts before and after each tool-backed query
+- Confirm that displayed table row count and chart aggregates correspond to the same `ai_df`
+
+### Experimentation Notebook and Decision Rationale
+
+To satisfy experiment-driven design requirements, the repository will include:
+- `notebooks/ai_assistant_experiments.ipynb`
+
+Planned notebook sections:
+1. Prompt variants tested (baseline vs enriched context vs strict tool policy)
+2. Tool interception variants (`on_tool_request`: none vs validate-only vs validate+transform)
+3. User-control variants (response style options and observed output differences)
+4. Evaluation metrics
+  - Numeric accuracy for count/rank questions
+  - Tool-use consistency for data-specific intents
+  - `ai_df` synchronization reliability with charts/table
+  - Response clarity from manual rubric
+5. Final option selection and narrative motivation
+
+Experiment outcome summary (recorded in `notebooks/ai_assistant_experiments.ipynb`):
+- Prompt strategy with schema + user goal + strict tool rules outperformed baseline behavior on numeric reliability and tool consistency.
+- `on_tool_request` validation + transformation outperformed validate-only and no-hook variants for count-query reliability while preserving read-only SQL safety.
+- Response-style dropdown provided clearer user-facing behavior differences than verbosity-only or scope-toggle alternatives.
+
+### Decision Summary (Experiment-Backed)
+
+| Decision area | Options tested | Selected option | Motivation summary (experiment-backed) |
+|---------------|----------------|-----------------|----------------------------------------|
+| Prompt context strategy | Baseline / schema-only / schema+goal+tool-rules | Schema + goal + strict tool rules | Highest combined reliability for numeric answers and consistent tool invocation on data-specific questions. |
+| Tool interception policy | None / validate / validate+transform | Validate + transform (`on_tool_request`) | Best balance of SQL safety and successful handling of ambiguous count requests through query normalization. |
+| User-facing LLM control | Verbosity slider / response style dropdown / scope toggle | Response style dropdown | Most interpretable control for users and clearest response-format differences without affecting query correctness. |
+| AI tab visibility behavior | CSS hide / conditional render | Tab-aware conditional rendering | Cleaner mode separation: overview controls are hidden in AI mode and restored in overview mode with minimal reactivity risk. |

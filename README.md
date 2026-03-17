@@ -1,18 +1,25 @@
+# Disaster Dash
+
+
 <p align="center">
-<img width="894" height="77" alt="DASH" src="https://github.com/user-attachments/assets/f17f67b4-3ce2-4588-b95e-7ea74aa049ab" />
-<br><br>
-<img src="https://github.com/user-attachments/assets/8bf34fc7-8ff1-417c-b6de-e034403306ed" width="600" height="400" />
+<img src="img/demo.gif" width="750" alt="Disaster Dash dashboard demo">
+</p>
+
+<p align="center">
+Demo showing filtering and AI Explorer functionality.
 </p>
 
 ## About
 
 Global aid policy workers face a critical challenge: understanding where disaster aid responses are insufficient compared to actual economic losses. Without a clear understanding of the aid gaps, policymakers may struggle to develop effective responses to global disasters.
 
-Disaster Dash is an interactive dashboard that makes these gaps visible. Users can explore global disaster frequency on a World Map, filter by disaster type, dates, and countries, and directly compare economic losses against aid responses through clear visualizations.
+**Disaster Dash** is an interactive dashboard that makes these gaps visible. Users can explore global disaster frequency on a World Map, filter by disaster type, dates, and countries, and directly compare economic losses against aid responses through coordinated visualizations.
+
+The dashboard also includes an **AI Explorer** that allows users to query the dataset using natural language.
 
 This dashboard is a group project for the Master of Data Science program at the University of British Columbia, DSCI 532: Data Visualization, 2025-26 Cohort.
 
-## Deployed App
+## Live Dashboard
 
 | Build | URL |
 |-------|-----|
@@ -23,6 +30,7 @@ This dashboard is a group project for the Master of Data Science program at the 
 ## Running the Dashboard Locally
 
 1. Clone this repository
+
 ```bash
 git clone https://github.com/UBC-MDS/DSCI-532_2026_18_disasterdash.git
 cd DSCI-532_2026_18_disasterdash
@@ -42,8 +50,7 @@ conda activate disaster-dash
 
 The **AI Explorer** tab uses the **Anthropic API** to power natural-language queries.
 
-To run the AI Explorer locally, you must provide an Anthropic API key.
-
+To run the dashboard locally, you must provide an Anthropic API key.
 
 - Create an API key at:  
   https://console.anthropic.com/
@@ -52,6 +59,7 @@ To run the AI Explorer locally, you must provide an Anthropic API key.
 
 ```bash
 touch .env
+nano .env
 ```
 
 - Add your API key to the file:
@@ -60,17 +68,61 @@ touch .env
 ANTHROPIC_API_KEY=your_key_here
 ```
 
+- Install chromium in the environment to run playwright tests
+
+```bash
+playwright install chromium
+```
+
+- Run playwright tests from root directory
+
+```bash
+ pytest tests/test_dash_playwrite.py
+```
+
 The application automatically loads this key using `python-dotenv`.
 
-> **Note:** The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
+> **Note:** 
+The `.env` step is required to run the dashboard locally. 
+The `.env` file is listed in `.gitignore` and should **never be committed to the repository**.
+
 
 5. Run the dashboard
 
+Because the application imports modules from the `src/` directory, you must set the Python path when running locally:
+
 ```bash
-shiny run src/app.py
+PYTHONPATH=. shiny run src/app.py
 ```
 
-6. Open your browser to the URL shown in the terminal.
+6. Open your browser to the URL shown in the terminal (typically http://localhost:8000).
+
+
+## Running Tests
+
+The test suite verifies core dashboard behaviors including filtering logic, aggregation correctness, and UI interactions.
+
+1) Install Playwright browser dependencies (required once):
+
+```bash
+playwright install
+```
+
+2) Start the dashboard:
+
+The Playwright tests interact with the running dashboard, so the app must be up and running before executing the tests. 
+
+```bash
+PYTHONPATH=. shiny run src/app.py
+```
+
+3) Run the tests:
+
+Open a second terminal from the project root with the `disaster-dash` environment activated.
+
+```bash 
+pytest
+```
 
 ## Contributing
 
