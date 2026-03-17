@@ -8,6 +8,7 @@ from shinywidgets import output_widget, render_widget
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import re
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.colors as pc
@@ -77,6 +78,41 @@ def fmt_num(v):
     if v >= 1e3:  return f"{v/1e3:.1f}K"
     return f"{v:,.0f}"
 
+
+def normalize_sql(query: str) -> str:
+    return query.strip().rstrip(";").strip()
+
+
+SQL_MUTATION_PATTERN = re.compile(
+    r"\b(drop|delete|truncate|insert|update|alter|create|replace|merge|grant|revoke)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def is_read_only_sql(query: str) -> bool:
+    q = normalize_sql(query)
+    if not q:
+        return False
+    if ";" in q:
+        return False
+    if SQL_MUTATION_PATTERN.search(q):
+        return False
+    q_lower = q.lower()
+    return q_lower.startswith("select") or q_lower.startswith("with")
+
+
+def is_count_intent(intent: str, query: str) -> bool:
+    text = f"{intent} {query}".lower()
+    count_terms = ("how many", "count", "number of", "total events", "total disasters")
+    return any(term in text for term in count_terms)
+
+
+def force_count_query(query: str) -> str:
+    q = normalize_sql(query)
+    if "count(" in q.lower():
+        return q
+    return f"SELECT COUNT(*) AS n FROM ({q}) AS count_subquery"
+
 # ── Constants ──────────────────────────────────────────────────────────────────
 COUNTRIES      = sorted(ISO3.keys())
 DISASTER_TYPES = [
@@ -88,6 +124,25 @@ SUMMARY_CHOICES = {
     "sum":  "Total Sum",
     "min":  "Minimum",
     "max":  "Maximum",
+}
+AI_STYLE_CHOICES = {
+    "concise": "Concise Analyst",
+    "policy_brief": "Policy Brief",
+    "step_by_step": "Step-by-Step",
+}
+AI_STYLE_INSTRUCTIONS = {
+    "concise": (
+        "Write compact answers in 3 to 5 bullet points. Lead with the key result, "
+        "then include one short interpretation line."
+    ),
+    "policy_brief": (
+        "Write a policy brief style answer with sections: Finding, Policy Implication, "
+        "Recommended Action. Keep each section short and evidence-based."
+    ),
+    "step_by_step": (
+        "Explain the result step by step: filters applied, metric computed, and result "
+        "interpretation. Keep steps explicit and numbered."
+    ),
 }
 MAP_METRICS = {
     "disasters":    "Disaster Frequency",
@@ -102,37 +157,83 @@ QUESTION_MAP = {
     "casualties": "Where are disasters causing the greatest loss of life?",
 }
 LAST_UPDATED = datetime.today().strftime("%B %d, %Y")
+DATASET_COLUMNS = [str(c) for c in df.columns]
+DATASET_COLUMNS_TEXT = ", ".join(DATASET_COLUMNS)
+
+
+def style_prompt_suffix(style_key: str) -> str:
+    rule = AI_STYLE_INSTRUCTIONS.get(style_key, AI_STYLE_INSTRUCTIONS["concise"])
+    return f"\n\nResponse style override for this session:\n{rule}"
 
 # ── QueryChat Config ───────────────────────────────────────────────────────────
 # Uses Anthropic Claude (Haiku) for natural language dataframe queries
-# Requires ANTHROPIC_API_KEY set locally or in Posit Connect secrets
+# Requires ANTHROPIC_API_KEY set locally (via .env) or in Posit Connect secrets
 
 import chatlas, os as _os, sys as _sys
+from dotenv import load_dotenv as _load_dotenv
+_load_dotenv()  # loads .env from the working directory if present
 
 _anthropic_key = _os.getenv("ANTHROPIC_API_KEY")
 if not _anthropic_key:
     print(
         "\n❌  ANTHROPIC_API_KEY is not set.\n"
-        "   Add it to your .env or Posit Connect secrets.\n",
+        "   Add it to a .env file in the project root or Posit Connect secrets.\n",
         file=_sys.stderr,
     )
     _sys.exit(1)
+
+AI_EXTRA_INSTRUCTIONS = f"""
+You are the Disaster Dash AI assistant for policy analysts studying disaster aid gaps.
+
+Dataset context:
+- Table name: global_disaster_response_2018_2024
+- Date coverage: 2018-01-01 to 2024-12-31
+- Available columns: {DATASET_COLUMNS_TEXT}
+
+User goal context:
+- Help users identify underfunded disaster responses.
+- Prioritize reliable, dataset-grounded evidence over generic claims.
+
+Tool usage rules:
+1) If the user asks for counts, totals, averages, rankings, percentages, or any numeric claim, run querychat_query before answering.
+2) If the user asks to filter or show a subset in dashboard visuals, run querychat_update_dashboard using a SELECT or WITH query.
+3) For requests that need both a numeric answer and dashboard filtering, run querychat_query first, then querychat_update_dashboard.
+4) Never provide invented numbers. If no tool result is available, say that and request clarification.
+
+SQL safety rules:
+- Use only SELECT or WITH statements.
+- Keep queries read-only.
+- Use only the known table and columns.
+
+Answer quality rules:
+- State the filters applied.
+- If query result is empty, explicitly say no rows matched and suggest broader filters.
+- Keep reasoning concise and tied to returned results.
+"""
+
+AI_GREETING = """Hi! I am your Disaster Dash AI assistant.
+
+Ask for filtered slices, counts, rankings, and comparisons. I will run dataset queries and then update the table and charts below.
+
+Try these examples:
+- "How many flood events occurred in India after 2020?"
+- "Show only earthquakes in Japan between 2021 and 2023."
+- "Which 5 countries had the highest total economic loss in 2024?"
+- "Filter events where casualties are greater than 1000 and aid is below 10 million USD."
+- "Compare total aid amount for floods vs hurricanes since 2019."
+- "What is the average response time for wildfires in Australia?"
+- "List countries where aid coverage is below 30 percent."
+- "Show disasters in Bangladesh in 2022 and summarize total loss and aid."
+"""
 
 qc = QueryChat(
     df,
     "global_disaster_response_2018_2024",
     client=chatlas.ChatAnthropic(model="claude-3-haiku-20240307", api_key=_anthropic_key),
-    greeting="""Hi! I'm your **Disaster Dash AI assistant** 🌍
-
-Ask me natural language questions to filter the disaster dataset. Try:
-- *"Show me only floods in India after 2020"*
-- *"Which country had the highest economic loss?"*
-- *"Filter to events with over 1000 casualties"*
-- *"Show earthquakes and hurricanes from 2022"*
-
-The table and charts below update automatically with your results.
-""",
+    extra_instructions=AI_EXTRA_INSTRUCTIONS,
+    greeting=AI_GREETING,
 )
+QC_BASE_SYSTEM_PROMPT = qc.system_prompt
 
 # ── Design Tokens ──────────────────────────────────────────────────────────────
 NAVY    = "#0b1f3a"
@@ -243,6 +344,12 @@ html, body, .bslib-page-fill {{
 
 .sb-section {{
     padding: 16px 14px 0 14px;
+}}
+.ai-sidebar-note {{
+    margin-top: 7px;
+    font-size: 0.69rem;
+    line-height: 1.35;
+    color: {T_SEC};
 }}
 .sb-label {{
     font-size: 0.6rem;
@@ -394,6 +501,80 @@ html, body, .bslib-page-fill {{
     font-weight: 600;
 }}
 .fp-sep {{ color: {BORDER}; font-size: 1rem; }}
+
+/* AI helper copy */
+.ai-instructions {{
+    border: 1px solid {BORDER};
+    background: #f8fbff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 8px 12px 10px;
+    font-size: 0.74rem;
+    line-height: 1.35;
+    color: {T_SEC};
+}}
+.ai-instructions .ai-expand-note {{
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border: 1px solid rgba(26,86,219,0.22);
+    background: rgba(26,86,219,0.08);
+    border-radius: 999px;
+    color: #1e3a8a;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.2;
+}}
+.ai-instructions .ai-title {{
+    display: block;
+    font-weight: 700;
+    color: {T_PRI};
+    margin-bottom: 4px;
+}}
+.ai-instructions ul {{
+    margin: 6px 0 0 14px;
+    padding: 0;
+}}
+.ai-instructions li {{
+    margin: 2px 0;
+}}
+.ai-query-status {{
+    border: 1px dashed {BORDER};
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 0 12px 10px;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: {T_SEC};
+}}
+.ai-query-status strong {{
+    color: {T_PRI};
+}}
+
+/* ── Prompt suggestion chips ── */
+.prompt-chips-wrap {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 12px 10px;
+}}
+.prompt-chip {{
+    background: #eef4ff;
+    border: 1px solid #b8d0f7;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.71rem;
+    color: #2d5fa6;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}}
+.prompt-chip:hover {{
+    background: #d4e6ff;
+    border-color: #5b97e8;
+}}
 
 /* ── CARDS ── */
 .card {{
@@ -585,7 +766,32 @@ label {{
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
 app_ui = ui.page_fillable(
-    ui.tags.head(ui.tags.style(CSS)),
+    ui.tags.head(
+        ui.tags.style(CSS),
+        ui.tags.script("""
+(function() {
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.prompt-chip');
+    if (!btn) return;
+    var prompt = btn.getAttribute('data-prompt');
+    if (!prompt) return;
+    // shiny-chat-input renders into itself (no shadow DOM) and exposes setInputValue()
+    var chatInput = document.querySelector('shiny-chat-input');
+    if (!chatInput) return;
+    if (typeof chatInput.setInputValue === 'function') {
+      chatInput.setInputValue(prompt, {submit: true});
+    } else {
+      var ta = chatInput.querySelector('textarea');
+      if (!ta) return;
+      ta.value = prompt;
+      ta.dispatchEvent(new Event('input', {bubbles: true}));
+      ta.dispatchEvent(new Event('change', {bubbles: true}));
+      ta.focus();
+    }
+  });
+})();
+"""),
+    ),
 
     # ── Page Header ────────────────────────────────────────────────────────────
     ui.div(
@@ -623,62 +829,83 @@ app_ui = ui.page_fillable(
         # ── Sidebar ────────────────────────────────────────────────────────────
         ui.sidebar(
 
-            ui.div(
-                ui.div("Country", class_="sb-label"),
-                ui.input_selectize(
-                    "countries", label=None,
-                    choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
-                    selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
-                    options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
+            ui.panel_conditional(
+                "input.main_tabs === 'overview'",
+                ui.div(
+                    ui.div("Country", class_="sb-label"),
+                    ui.input_selectize(
+                        "countries", label=None,
+                        choices={"_all_": "— All Countries —"} | {c: c for c in COUNTRIES},
+                        selected=["Brazil", "Bangladesh", "South Africa"], multiple=True,
+                        options={"placeholder": "Select countries…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ),
+                    ui.div(
+                        ui.input_action_button("sel_all_c",   "✓ All",  width="50%"),
+                        ui.input_action_button("desel_all_c", "✕ None", width="50%"),
+                        class_="sb-btns",
+                    ),
+                    class_="sb-section",
                 ),
                 ui.div(
-                    ui.input_action_button("sel_all_c",   "✓ All",  width="50%"),
-                    ui.input_action_button("desel_all_c", "✕ None", width="50%"),
-                    class_="sb-btns",
-                ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Disaster Type", class_="sb-label"),
-                ui.input_selectize(
-                    "disaster_type", label=None,
-                    choices={"_all_": "— All Types —"} | {d: d for d in DISASTER_TYPES},
-                    selected=DISASTER_TYPES, multiple=True,
-                    options={"placeholder": "Select types…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ui.div("Disaster Type", class_="sb-label"),
+                    ui.input_selectize(
+                        "disaster_type", label=None,
+                        choices={"_all_": "— All Types —"} | {d: d for d in DISASTER_TYPES},
+                        selected=DISASTER_TYPES, multiple=True,
+                        options={"placeholder": "Select types…", "plugins": ["remove_button"], "closeAfterSelect": False},
+                    ),
+                    ui.div(
+                        ui.input_action_button("sel_all_d",   "✓ All",  width="50%"),
+                        ui.input_action_button("desel_all_d", "✕ None", width="50%"),
+                        class_="sb-btns",
+                    ),
+                    class_="sb-section",
                 ),
                 ui.div(
-                    ui.input_action_button("sel_all_d",   "✓ All",  width="50%"),
-                    ui.input_action_button("desel_all_d", "✕ None", width="50%"),
-                    class_="sb-btns",
+                    ui.div("Date Range", class_="sb-label"),
+                    ui.input_date_range(
+                        "date_range", label=None,
+                        start="2018-01-01", end="2024-12-31",
+                        min="2018-01-01",   max="2024-12-31",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Date Range", class_="sb-label"),
-                ui.input_date_range(
-                    "date_range", label=None,
-                    start="2018-01-01", end="2024-12-31",
-                    min="2018-01-01",   max="2024-12-31",
+                ui.div(
+                    ui.div("Map Metric", class_="sb-label"),
+                    ui.input_select(
+                        "map_metric", label=None,
+                        choices=MAP_METRICS, selected="total_loss",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
-            ),
-            ui.div(
-                ui.div("Map Metric", class_="sb-label"),
-                ui.input_select(
-                    "map_metric", label=None,
-                    choices=MAP_METRICS, selected="total_loss",
+                ui.div(
+                    ui.div("Bar Chart Statistic", class_="sb-label"),
+                    ui.input_select(
+                        "summary_stat", label=None,
+                        choices=SUMMARY_CHOICES, selected="sum",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
+                ui.input_action_button("reset_button", "↺  Reset All Filters"),
             ),
-            ui.div(
-                ui.div("Bar Chart Statistic", class_="sb-label"),
-                ui.input_select(
-                    "summary_stat", label=None,
-                    choices=SUMMARY_CHOICES, selected="sum",
+
+            ui.panel_conditional(
+                "input.main_tabs === 'ai_explorer'",
+                ui.div(
+                    ui.div("AI Response Style", class_="sb-label"),
+                    ui.input_select(
+                        "ai_response_style",
+                        label=None,
+                        choices=AI_STYLE_CHOICES,
+                        selected="concise",
+                    ),
+                    ui.div(
+                        "Choose how the assistant writes answers. This changes style, not the underlying data query.",
+                        class_="ai-sidebar-note",
+                    ),
+                    class_="sb-section",
                 ),
-                class_="sb-section",
             ),
-            ui.input_action_button("reset_button", "↺  Reset All Filters"),
 
             width=236,
             open="desktop",
@@ -687,7 +914,10 @@ app_ui = ui.page_fillable(
         # ── Main Content ───────────────────────────────────────────────────────
         ui.div(
             # Active filter strip
-            ui.div(ui.output_ui("filter_strip"), id="filter-strip"),
+            ui.panel_conditional(
+                "input.main_tabs === 'overview'",
+                ui.div(ui.output_ui("filter_strip"), id="filter-strip"),
+            ),
 
             ui.navset_underline(
 
@@ -726,6 +956,7 @@ app_ui = ui.page_fillable(
 
                         class_="main-inner",
                     ),
+                    value="overview",
                 ),
 
                 # ── Tab 2: AI Explorer ───────────────────────────────────────
@@ -737,8 +968,15 @@ app_ui = ui.page_fillable(
                         ui.layout_columns(
                             ui.card(
                                 ui.card_header("💬  Ask a Question About the Data"),
-                                qc.ui(id="chat"),
+                                ui.output_ui("ai_instructions"),
+                                ui.output_ui("prompt_chips"),
+                                ui.output_ui("ai_query_status"),
+                                ui.div(
+                                    qc.ui(id="chat", height="460px", fill=True),
+                                    style="flex:1; min-height:0;",
+                                ),
                                 full_screen=True,
+                                style="display:flex; flex-direction:column; height:100%;",
                             ),
                             ui.card(
                                 ui.card_header("📋  Filtered Results"),
@@ -750,7 +988,7 @@ app_ui = ui.page_fillable(
                                 full_screen=True,
                             ),
                             col_widths=[5, 7],
-                            style="height:430px; gap:14px;",
+                            style="height:600px; gap:14px;",
                         ),
 
                         # Row 2: Two charts driven by AI-filtered data
@@ -771,6 +1009,7 @@ app_ui = ui.page_fillable(
 
                         class_="main-inner",
                     ),
+                    value="ai_explorer",
                 ),
 
                 id="main_tabs",
@@ -851,6 +1090,49 @@ def server(input, output, session):
             lbl("Dates:"),      pill(f"{start} → {end}"), sep(),
             lbl("Bar Chart Stat:"),  pill(SUMMARY_CHOICES[input.summary_stat()]), sep(),
             lbl("Map Metric:"), pill(MAP_METRICS[input.map_metric()]),
+        )
+
+    @render.ui
+    def ai_instructions():
+        style_label = AI_STYLE_CHOICES.get(input.ai_response_style() or "concise", "Concise Analyst")
+        return ui.div(
+            ui.span(
+                "Best viewing: click Expand to see full AI replies and query results.",
+                class_="ai-expand-note",
+            ),
+            ui.span("How To Ask Better AI Questions", class_="ai-title"),
+            ui.div(f"Current response style: {style_label}"),
+            ui.tags.ul(
+                ui.tags.li("Be explicit about metric, location, and year range."),
+                ui.tags.li("For counts, rankings, and averages, include the exact measure to compute."),
+                ui.tags.li("For filtered views, use verbs like show, filter, keep only, and include conditions."),
+                ui.tags.li("Ask follow-up questions to refine thresholds, dates, and regions."),
+            ),
+            class_="ai-instructions",
+        )
+
+    @render.ui
+    def prompt_chips():
+        prompts = [
+            "How many flood events occurred in India after 2020?",
+            "Which 5 countries had the highest total economic loss in 2024?",
+            "Filter events where casualties > 1000 and aid < 10M USD.",
+            "Compare total aid for floods vs earthquakes since 2019.",
+            "Show only wildfires in Australia between 2021 and 2023.",
+            "What is the average economic loss per disaster type?",
+            "List countries where aid is below 30% of total losses.",
+            "Show all disasters in Bangladesh in 2022.",
+        ]
+        return ui.div(
+            *[
+                ui.tags.button(
+                    p,
+                    class_="prompt-chip",
+                    **{"data-prompt": p},
+                )
+                for p in prompts
+            ],
+            class_="prompt-chips-wrap",
         )
 
     # ── Filtered data (Overview tab) ──────────────────────────────────────────
@@ -1127,10 +1409,161 @@ def server(input, output, session):
     # Wire up querychat server.
     # Returns a dict: chat["df"]() → filtered dataframe, chat["sql"]() → SQL string
     qc_vals = qc.server(id="chat")
+
+    tool_audit = reactive.value([])
+    ai_runtime_status = reactive.value("Awaiting first AI query.")
+    ai_sync_status = reactive.value("No AI query has been executed yet.")
+
+    # Plain Python lists/dicts for collecting data inside the Extended Task
+    # (reactive values cannot be read or written inside Extended Tasks).
+    _pending_audit: list = []
+    _pending_status: list = []  # holds at most the latest status string
+
+    def _append_audit_entry(entry):
+        _pending_audit.append(entry)
+
+    def _tool_result_row_count(value):
+        if isinstance(value, list):
+            return len(value)
+        if isinstance(value, pd.DataFrame):
+            return int(value.shape[0])
+        return None
+
+    def _on_tool_request(request):
+        tool_name = request.name
+        args = dict(request.arguments) if isinstance(request.arguments, dict) else {}
+        original_query = str(args.get("query", ""))
+        final_query = original_query
+        transformed = False
+
+        if tool_name not in {
+            "querychat_query",
+            "querychat_update_dashboard",
+            "querychat_reset_dashboard",
+        }:
+            raise chatlas.ToolRejectError(f"Unsupported tool requested: {tool_name}")
+
+        if tool_name in {"querychat_query", "querychat_update_dashboard"}:
+            final_query = normalize_sql(original_query)
+            if not final_query:
+                raise chatlas.ToolRejectError("Tool request was rejected because SQL query was empty.")
+
+            if not is_read_only_sql(final_query):
+                raise chatlas.ToolRejectError(
+                    "Tool request was rejected because SQL must be read-only SELECT or WITH."
+                )
+
+            if tool_name == "querychat_query":
+                intent = str(args.get("_intent", ""))
+                if is_count_intent(intent, final_query):
+                    count_query = force_count_query(final_query)
+                    transformed = count_query != final_query
+                    final_query = count_query
+
+            args["query"] = final_query
+            request.arguments = args
+
+        _pending_status.clear()
+        _pending_status.append(f"Validated tool request: {tool_name}")
+        _append_audit_entry(
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stage": "request",
+                "tool": tool_name,
+                "query_before": normalize_sql(original_query) if original_query else "",
+                "query_after": final_query,
+                "transformed": transformed,
+            }
+        )
+
+    def _on_tool_result(result):
+        tool_name = result.request.name if result.request is not None else "unknown"
+        row_count = _tool_result_row_count(result.value)
+        error_text = str(result.error) if result.error is not None else ""
+
+        if error_text:
+            status = f"Tool error in {tool_name}: {error_text}"
+        elif row_count is None:
+            status = f"Tool executed: {tool_name}"
+        else:
+            status = f"Tool executed: {tool_name} ({row_count} rows returned)"
+
+        _pending_status.clear()
+        _pending_status.append(status)
+        _append_audit_entry(
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stage": "result",
+                "tool": tool_name,
+                "rows": row_count,
+                "error": error_text,
+            }
+        )
+
+    qc_vals.client.on_tool_request(_on_tool_request)
+    qc_vals.client.on_tool_result(_on_tool_result)
+
+    # Flush pending tool data into reactive values after each chat turn completes.
+    # qc_vals.df() changes whenever QueryChat finishes a turn — use it as the trigger.
+    @reactive.effect
+    def _flush_tool_state():
+        qc_vals.df()  # invalidate whenever a new AI result is available
+        if _pending_status:
+            ai_runtime_status.set(_pending_status[-1])
+            _pending_status.clear()
+        if _pending_audit:
+            history = list(tool_audit.get() or [])
+            history.extend(_pending_audit)
+            tool_audit.set(history[-40:])
+            _pending_audit.clear()
+
+    @reactive.effect
+    @reactive.event(input.ai_response_style)
+    def _update_prompt_for_style():
+        # @reactive.event already isolates the body; read the input directly.
+        style = input.ai_response_style() or "concise"
+        qc_vals.client.system_prompt = QC_BASE_SYSTEM_PROMPT + style_prompt_suffix(style)
+
+    @render.ui
+    def ai_query_status():
+        sql_text = normalize_sql(qc_vals.sql() or "")
+        history = tool_audit.get() or []
+        last_event = history[-1] if history else None
+        last_event_text = "No tool call yet."
+        if last_event is not None:
+            stage = last_event.get("stage", "event")
+            tool_name = last_event.get("tool", "unknown")
+            rows = last_event.get("rows")
+            if rows is None:
+                last_event_text = f"{stage} -> {tool_name}"
+            else:
+                last_event_text = f"{stage} -> {tool_name} ({rows} rows)"
+
+        return ui.div(
+            ui.div(ui.tags.strong("Tool pipeline:"), f" {ai_runtime_status()}"),
+            ui.div(ui.tags.strong("Dataframe sync:"), f" {ai_sync_status()}"),
+            ui.div(ui.tags.strong("Active SQL:"), f" {sql_text if sql_text else 'None'}"),
+            ui.div(ui.tags.strong("Last event:"), f" {last_event_text}"),
+            class_="ai-query-status",
+        )
     
     @reactive.calc
     def ai_df():
         return qc_vals.df()
+
+    @reactive.effect
+    def _verify_ai_sync():
+        data = ai_df()
+        row_count = len(data) if hasattr(data, "__len__") else 0
+        has_sql = bool(normalize_sql(qc_vals.sql() or ""))
+        if has_sql:
+            ai_sync_status.set(
+                f"Verified shared ai_df with {row_count:,} rows. The AI table and both AI charts read this same filtered dataframe."
+            )
+        else:
+            ai_sync_status.set(
+                f"Current ai_df size: {row_count:,} rows. No persistent AI dashboard filter is active yet."
+            )
 
     # Filtered data table
     @render.data_frame
