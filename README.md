@@ -1,13 +1,6 @@
 # Disaster Dash
 
-
-<p align="center">
-<img src="img/demo.gif" width="750" alt="Disaster Dash dashboard demo">
-</p>
-
-<p align="center">
-Demo showing filtering and AI Explorer functionality.
-</p>
+![Demo](img/demo.gif)
 
 ## About
 
