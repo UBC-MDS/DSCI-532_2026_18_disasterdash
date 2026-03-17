@@ -1,5 +1,5 @@
 """
-Disaster Dash (v3) — AI Explorer Tab Added
+Disaster Dash (v4) — AI Explorer Tab Added
 Global Disaster Impact & Humanitarian Aid (2018–2024)
 """
 from src.fmt_currency import fmt_currency
@@ -1375,19 +1375,8 @@ def server(input, output, session):
         return fig
 
     # ── Overview Bar Chart Helper ─────────────────────────────────────────────
-    def _make_bar(column, y_label):
-        data = filtered_df()
-        if data.empty:
-            return _empty_fig("No data to display", "Select countries and disaster types to view")
-
-        stat     = input.summary_stat()
-        stat_lbl = SUMMARY_CHOICES[stat]
-        grp = (
-            data.groupby("disaster_type")[column]
-            .agg(stat).reset_index()
-            .sort_values(column, ascending=False)
-        )
-        grp["fmt"] = grp[column].apply(fmt_currency)
+    
+    def _build_bar_fig(grp, column, y_label, annotations=None):
         n       = len(grp)
         palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
 
@@ -1416,6 +1405,7 @@ def server(input, output, session):
             tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
             gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
         )
+
         if use_log:
             yaxis_cfg["type"] = "log"
             yaxis_cfg["tickformat"] = "~s"
@@ -1423,10 +1413,13 @@ def server(input, output, session):
             yaxis_cfg["range"] = [0, y_max * 1.25]
 
         all_annotations = list(annotations or [])
+
         if use_log:
             all_annotations.append(dict(
-                text="log scale", xref="paper", yref="paper",
-                x=0, y=1.06, xanchor="left", yanchor="bottom",
+                text="log scale",
+                xref="paper", yref="paper",
+                x=0, y=1.06,
+                xanchor="left", yanchor="bottom",
                 showarrow=False,
                 font=dict(size=8, color=T_MUTED, family="Instrument Sans"),
             ))
@@ -1435,23 +1428,29 @@ def server(input, output, session):
             annotations=all_annotations,
             yaxis=yaxis_cfg,
             xaxis=dict(
-            tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-            showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-            automargin=True,
-            tickangle=-45,
+                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+                showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
+                automargin=True,
+                tickangle=-45,
             ),
             margin=dict(l=60, r=20, t=28, b=80),
             height=274,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             showlegend=False,
-            hoverlabel=dict(bgcolor="#fff", font_color=T_PRI, font_size=11,
-                            font_family="Instrument Sans", bordercolor=NAVY),
+            hoverlabel=dict(
+                bgcolor="#fff",
+                font_color=T_PRI,
+                font_size=11,
+                font_family="Instrument Sans",
+                bordercolor=NAVY
+            ),
         )
-        return fig
 
+        return fig
+    
     def _make_bar(column, y_label):
-        data = filtered_df().execute()
+        data = filtered_df()
         if data.empty:
             return _empty_fig("No data to display", "Select countries and disaster types to view")
         stat     = input.summary_stat()

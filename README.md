@@ -68,18 +68,6 @@ nano .env
 ANTHROPIC_API_KEY=your_key_here
 ```
 
-- Install chromium in the environment to run playwright tests
-
-```bash
-playwright install chromium
-```
-
-- Run playwright tests from root directory
-
-```bash
- pytest tests/test_dash_playwrite.py
-```
-
 The application automatically loads this key using `python-dotenv`.
 
 > **Note:** 
@@ -100,7 +88,7 @@ PYTHONPATH=. shiny run src/app.py
 
 ## Running Tests
 
-The test suite verifies core dashboard behaviors including filtering logic, aggregation correctness, and UI interactions.
+The test suite verifies core dashboard behaviors including filtering logic, aggregation correctness, and UI interactions. The tests include both Playwright UI tests and pytest unit tests for core data logic.
 
 1) Install Playwright browser dependencies (required once):
 
