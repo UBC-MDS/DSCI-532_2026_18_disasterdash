@@ -102,6 +102,7 @@ The most formative materials this milestone were the chatlas/QueryChat documenta
 - Updated KPI cards to improve interpretability based on instructor feedback.
 - Refined KPI typography and spacing to improve readability and visual hierarchy.
 - Improved layout margins and colorbar spacing to prevent overlap with the map canvas
+- Improved scaling and granularity in bar charts for easier interpretability
 
 ## Known Issues:
 
@@ -109,6 +110,7 @@ The most formative materials this milestone were the chatlas/QueryChat documenta
 - Data only goes up to 2024.
 - Demo GIF performs demo on posit cloud build with some lag and lower resolution from browser recording
 - Demo GIF out of date with current dashboard
+- Left bar chart continues to randonly render out of scale - future exploration of Shiny and async issues. 
 
 
 ## Reflection:

@@ -1321,24 +1321,16 @@ def server(input, output, session):
         return fig
 
     # ── Overview Bar Chart Helper ─────────────────────────────────────────────
-    def _make_bar(column, y_label):
-        data = filtered_df().execute()
-        if data.empty:
-            return _empty_fig("No data to display", "Select countries and disaster types to view")
-
-        stat     = input.summary_stat()
-        stat_lbl = SUMMARY_CHOICES[stat]
-        grp = (
-            data.groupby("disaster_type")[column]
-            .agg(stat).reset_index()
-            .sort_values(column, ascending=False)
-        )
-        grp["fmt"] = grp[column].apply(fmt_currency)
+    def _build_bar_fig(grp, column, y_label, annotations=None):
         n       = len(grp)
         palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
 
+        y_min   = grp[column].replace(0, pd.NA).dropna().min()
         y_max   = grp[column].max()
-        y_range = [0, y_max * 1.25]
+        use_log = pd.notna(y_min) and y_min > 0 and y_max > 0 and (y_max / y_min) > 10
+
+        text_pos = "inside" if use_log else "outside"
+        text_col = "#ffffff" if use_log else T_SEC
 
         fig = go.Figure(go.Bar(
             x=grp["disaster_type"],
@@ -1348,38 +1340,68 @@ def server(input, output, session):
             customdata=grp[["fmt"]],
             hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
             text=grp["fmt"],
-            textposition="outside",
-            textfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+            textposition=text_pos,
+            textfont=dict(size=8, color=text_col, family="Instrument Sans"),
+            cliponaxis=False,
         ))
+
+        yaxis_cfg = dict(
+            title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
+            tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+            gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
+        )
+        if use_log:
+            yaxis_cfg["type"] = "log"
+            yaxis_cfg["tickformat"] = "~s"
+        else:
+            yaxis_cfg["range"] = [0, y_max * 1.25]
+
+        all_annotations = list(annotations or [])
+        if use_log:
+            all_annotations.append(dict(
+                text="log scale", xref="paper", yref="paper",
+                x=0, y=1.06, xanchor="left", yanchor="bottom",
+                showarrow=False,
+                font=dict(size=8, color=T_MUTED, family="Instrument Sans"),
+            ))
+
         fig.update_layout(
-            annotations=[dict(
-                text=f"({stat_lbl})", xref="paper", yref="paper",
-                x=1, y=1.05, xanchor="right", yanchor="bottom",
-                showarrow=False, font=dict(size=9, color=T_SEC, family="Instrument Sans"),
-            )],
-            yaxis=dict(
-                title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
-                range=y_range,
-            ),
+            annotations=all_annotations,
+            yaxis=yaxis_cfg,
             xaxis=dict(
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-                automargin=True,
-                autorange=True,  # let Plotly calculate range naturally
+            tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
+            showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
+            automargin=True,
+            tickangle=-45,
             ),
-            margin=dict(l=60, r=20, t=22, b=80),
+            margin=dict(l=60, r=20, t=28, b=80),
             height=274,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             showlegend=False,
-            hoverlabel=dict(
-                bgcolor="#fff", font_color=T_PRI,
-                font_size=11, font_family="Instrument Sans", bordercolor=NAVY,
-            ),
+            hoverlabel=dict(bgcolor="#fff", font_color=T_PRI, font_size=11,
+                            font_family="Instrument Sans", bordercolor=NAVY),
         )
         return fig
+
+    def _make_bar(column, y_label):
+        data = filtered_df().execute()
+        if data.empty:
+            return _empty_fig("No data to display", "Select countries and disaster types to view")
+        stat     = input.summary_stat()
+        stat_lbl = SUMMARY_CHOICES[stat]
+        grp = (
+            data.groupby("disaster_type")[column]
+            .agg(stat).reset_index()
+            .sort_values(column, ascending=False)
+        )
+        grp["fmt"] = grp[column].apply(fmt_currency)
+        annotations = [dict(
+            text=f"({stat_lbl})", xref="paper", yref="paper",
+            x=1, y=1.06, xanchor="right", yanchor="bottom",
+            showarrow=False, font=dict(size=9, color=T_SEC, family="Instrument Sans"),
+        )]
+        return _build_bar_fig(grp, column, y_label, annotations=annotations)
     
     @render_widget
     def bar_loss():
@@ -1578,54 +1600,13 @@ def server(input, output, session):
             return _empty_fig("No data yet", "Ask a question above to filter the dataset")
         if "disaster_type" not in data.columns or data["disaster_type"].isna().all():
             return _empty_fig("No disaster_type column", "Check your query")
-
         grp = (
             data.groupby("disaster_type")[column]
             .sum().reset_index()
             .sort_values(column, ascending=False)
         )
         grp["fmt"] = grp[column].apply(fmt_currency)
-        n = len(grp)
-        palette = pc.sample_colorscale("teal", [i / max(n - 1, 1) for i in range(n)])
-
-        y_max   = grp[column].max()
-        y_range = [0, y_max * 1.25]
-
-        fig = go.Figure(go.Bar(
-            x=grp["disaster_type"],
-            y=grp[column],
-            orientation="v",
-            marker=dict(color=palette, line=dict(width=0)),
-            customdata=grp[["fmt"]],
-            hovertemplate="<b>%{x}</b><br>" + f"{y_label}: %{{customdata[0]}}<extra></extra>",
-            text=grp["fmt"],
-            textposition="outside",
-            textfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-        ))
-        fig.update_layout(
-            yaxis=dict(
-                title=dict(text=y_label, font=dict(size=9, color=T_SEC, family="Instrument Sans")),
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                gridcolor=BORDER, showgrid=True, zeroline=False, showline=False,
-                range=y_range,
-            ),
-            xaxis=dict(
-                tickfont=dict(size=8, color=T_SEC, family="Instrument Sans"),
-                showgrid=False, zeroline=False, showline=True, linecolor=BORDER,
-                automargin=True,
-                autorange=True,  # let Plotly calculate range naturally
-            ),
-            margin=dict(l=60, r=20, t=10, b=80),
-            height=274,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            showlegend=False,
-            hoverlabel=dict(
-                bgcolor="#fff", font_color=T_PRI,
-                font_size=11, font_family="Instrument Sans", bordercolor=NAVY,
-            ),
-        )
-        return fig
+        return _build_bar_fig(grp, column, y_label)
 
     @render_widget
     def ai_bar_loss():
