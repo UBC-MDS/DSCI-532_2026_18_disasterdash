@@ -92,6 +92,9 @@ The most formative materials this milestone were the chatlas/QueryChat documenta
 - Added active map titles that adjusted based upon the selected map metric to more clearly demonstrate the policy quesion answered by the map visual
 - Flipped all bar charts vertically aligned with some scaling
 - Changed the bar chart color themes to the more moderate 'teal' 
+- Refactored helper functions fmt_num and fmt_currency into imported modular functions
+- Added Pytest tests to the modular helper functions 
+- Create and add small suite of playwrite tests to test live dashboard functionality
 
 ## Fixed:
 

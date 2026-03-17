@@ -2,7 +2,8 @@
 Disaster Dash (v3) — AI Explorer Tab Added
 Global Disaster Impact & Humanitarian Aid (2018–2024)
 """
-
+from src.fmt_currency import fmt_currency
+from src.fmt_num import fmt_num 
 from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
 from pathlib import Path
@@ -63,20 +64,6 @@ GDP = {
     "United States": 28750956130731.2,
     "South Africa": 401144998373.585,
 }
-# ── Helpers ────────────────────────────────────────────────────────────────────
-def fmt_currency(v):
-    s = "-" if v < 0 else ""
-    v = abs(v)
-    if v >= 1e12:  return f"{s}${v/1e12:.2f}T"
-    if v >= 1e9:   return f"{s}${v/1e9:.1f}B"
-    if v >= 1e6:   return f"{s}${v/1e6:.1f}M"
-    if v >= 1e3:   return f"{s}${v/1e3:.1f}K"
-    return f"{s}${v:.0f}"
-
-def fmt_num(v):
-    if v >= 1e6:  return f"{v/1e6:.1f}M"
-    if v >= 1e3:  return f"{v/1e3:.1f}K"
-    return f"{v:,.0f}"
 
 
 def normalize_sql(query: str) -> str:
