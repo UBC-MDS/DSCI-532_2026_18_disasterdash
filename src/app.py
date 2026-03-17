@@ -972,7 +972,7 @@ app_ui = ui.page_fillable(
                                 ui.output_ui("prompt_chips"),
                                 ui.output_ui("ai_query_status"),
                                 ui.div(
-                                    qc.ui(id="chat", height="100%", fill=True),
+                                    qc.ui(id="chat", height="460px", fill=True),
                                     style="flex:1; min-height:0;",
                                 ),
                                 full_screen=True,
